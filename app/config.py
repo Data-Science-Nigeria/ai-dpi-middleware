@@ -9,12 +9,14 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
-    # OAuth2
-    oauth_issuer: str  # e.g. https://accounts.google.com
-    oauth_client_id: str
-    oauth_client_secret: str
-    oauth_audience: str = ""  # expected audience claim in JWT; leave empty to skip check
-    jwks_uri: str  # e.g. https://accounts.google.com/.well-known/openid-configuration/jwks
+    # Client credentials (used by /auth/token)
+    client_id: str
+    client_secret: str
+
+    # JWT
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60
 
     # Anthropic
     anthropic_api_key: str
