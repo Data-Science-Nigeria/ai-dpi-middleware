@@ -20,10 +20,15 @@ class Settings(BaseSettings):
     # CLIENTS={"app1":{"secret":"s3cr3t","roles":["user"]},"admin":{"secret":"s3cr3t","roles":["admin","user"]}}
     clients: dict[str, ClientConfig] = {}
 
-    # JWT
+    # JWT (local tokens)
     jwt_secret: str
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
+
+    # OIDC (optional — set to enable external provider tokens)
+    oidc_issuer: str | None = None
+    oidc_jwks_uri: str | None = None
+    oidc_audience: str | None = None  # validate `aud` claim if set
 
     # Anthropic
     anthropic_api_key: str
