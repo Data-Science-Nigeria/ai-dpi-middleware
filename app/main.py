@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routers import base
+from app.middleware.base import add_middleware
 from app.services.ai import get_client
 
 
@@ -31,5 +32,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+add_middleware(app)
 
 app.include_router(base.router)
