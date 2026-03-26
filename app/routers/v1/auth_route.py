@@ -6,23 +6,11 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status
 from jose import jwt
-from pydantic import BaseModel
 
 from app.config import settings
+from app.schemas.auth import TokenRequest, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
-
-class TokenRequest(BaseModel):
-    client_id: str
-    client_secret: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
-    roles: list[str]
 
 
 @router.post("/token", response_model=TokenResponse)

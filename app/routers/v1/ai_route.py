@@ -4,27 +4,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
 
 from app.auth.rbac import require_roles
+from app.schemas.ai import ChatRequest, ChatResponse
 from app.services import ai as ai_service
 
 router = APIRouter(prefix="/ai", tags=["AI"])
-
-
-class Message(BaseModel):
-    role: str = Field(..., pattern="^(user|assistant)$")
-    content: str
-
-
-class ChatRequest(BaseModel):
-    messages: list[Message]
-    system: str | None = None
-    max_tokens: int = Field(1024, ge=1, le=8096)
-
-
-class ChatResponse(BaseModel):
-    reply: str
 
 
 @router.post("/chat", response_model=ChatResponse)
