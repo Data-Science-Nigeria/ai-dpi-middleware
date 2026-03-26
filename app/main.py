@@ -6,16 +6,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import ai, auth, health
+from app.routers import base
+from app.services.ai import get_client
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Startup: warm up AI client
-    from app.services.ai import get_client
-    get_client()
+    get_client()  # warm up the Anthropic client on startup
     yield
-    # Shutdown: nothing to clean up for now
 
 
 app = FastAPI(
@@ -34,6 +32,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router)
-app.include_router(auth.router)
-app.include_router(ai.router)
+app.include_router(base.router)

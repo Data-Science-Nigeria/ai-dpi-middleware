@@ -1,4 +1,10 @@
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class ClientConfig(BaseModel):
+    secret: str
+    roles: list[str] = []
 
 
 class Settings(BaseSettings):
@@ -9,9 +15,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
-    # Client credentials (used by /auth/token)
-    client_id: str
-    client_secret: str
+    # Client registry: maps client_id -> {secret, roles}
+    # JSON env var, e.g.:
+    # CLIENTS={"app1":{"secret":"s3cr3t","roles":["user"]},"admin":{"secret":"s3cr3t","roles":["admin","user"]}}
+    clients: dict[str, ClientConfig] = {}
 
     # JWT
     jwt_secret: str
