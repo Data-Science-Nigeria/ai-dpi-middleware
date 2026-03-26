@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import httpx
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import OAuth2AuthorizationCodeBearer
 from jose import JWTError, jwk, jwt
 
 from app.config import settings
 
-bearer_scheme = HTTPBearer()
+bearer_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="/api/v1/auth/oauth2/login",
+    tokenUrl="/api/v1/auth/token",
+)
 
 _LOCAL_ALGORITHMS = {"HS256", "HS384", "HS512"}
 _OIDC_ALGORITHMS = {"RS256", "RS384", "RS512", "ES256", "ES384", "ES512"}
@@ -104,14 +107,13 @@ async def _validate_oidc(token: str, alg: str, kid: str | None) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    token: str = Depends(bearer_scheme),
 ) -> dict:
     """Validate a Bearer JWT and return its claims.
 
     Routes to local HS256 validation or OIDC JWKS validation based on the
     token's `alg` header field.
     """
-    token = credentials.credentials
 
     try:
         header = jwt.get_unverified_header(token)
