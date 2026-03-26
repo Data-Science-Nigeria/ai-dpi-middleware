@@ -9,12 +9,15 @@ from app.config import settings
 from app.routers import base
 from app.middleware.base import add_middleware
 from app.services.ai import get_client
+from app.services import redis as redis_service
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    get_client()  # warm up the Anthropic client on startup
+    get_client()              # warm up Anthropic client
+    redis_service.get_client()  # warm up Redis connection
     yield
+    await redis_service.close()  # graceful shutdown
 
 
 app = FastAPI(

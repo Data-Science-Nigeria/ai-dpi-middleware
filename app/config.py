@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     anthropic_model: str = "claude-sonnet-4-6"
 
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+    oauth2_state_ttl_seconds: int = 300  # how long a login state token is valid
+
     # CORS
     cors_origins: list[str] = ["*"]
 

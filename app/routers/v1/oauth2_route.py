@@ -10,11 +10,11 @@ from fastapi.responses import RedirectResponse
 
 from app.config import settings
 from app.schemas.oauth import OAuth2ClientCredentialsRequest, OAuth2TokenResponse
+from app.services.redis import get_client as get_redis
 
 router = APIRouter(prefix="/auth/oauth2", tags=["OAuth2"])
 
-# In-process state store — replace with Redis/DB for multi-instance deployments
-_state_store: set[str] = set()
+_STATE_PREFIX = "oauth2:state:"
 
 
 def _require_oauth2_config() -> None:
@@ -46,7 +46,8 @@ async def oauth2_login() -> RedirectResponse:
     _require_oauth2_config()
 
     state = secrets.token_urlsafe(32)
-    _state_store.add(state)
+    redis = get_redis()
+    await redis.setex(f"{_STATE_PREFIX}{state}", settings.oauth2_state_ttl_seconds, "1")
 
     scope = " ".join(settings.oauth2_scopes)
     params = (
@@ -67,10 +68,12 @@ async def oauth2_callback(
     """Receive the authorization code, validate state, and exchange for tokens."""
     _require_oauth2_config()
 
-    if state and state not in _state_store:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OAuth2 state")
     if state:
-        _state_store.discard(state)
+        redis = get_redis()
+        key = f"{_STATE_PREFIX}{state}"
+        valid = await redis.getdel(key)  # atomic get-and-delete
+        if not valid:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth2 state")
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
