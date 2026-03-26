@@ -25,10 +25,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
 
-    # OIDC (optional — set to enable external provider tokens)
+    # OIDC / OAuth2 (optional — set to enable external provider tokens & flows)
     oidc_issuer: str | None = None
     oidc_jwks_uri: str | None = None
-    oidc_audience: str | None = None  # validate `aud` claim if set
+    oidc_audience: str | None = None         # validate `aud` claim if set
+
+    # OAuth2 Authorization Code + Client Credentials flows
+    oauth2_client_id: str | None = None
+    oauth2_client_secret: str | None = None
+    oauth2_authorization_endpoint: str | None = None
+    oauth2_token_endpoint: str | None = None
+    oauth2_redirect_uri: str | None = None
+    oauth2_scopes: list[str] = ["openid", "profile", "email"]
 
     # Anthropic
     anthropic_api_key: str
