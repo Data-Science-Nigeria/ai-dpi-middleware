@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     groq_model: str = "groq-1.5-pro"
 
+    # OpenAI
+    openai_api_key: str | None = None
+
     # Redis
     redis_url: str = "redis://localhost:6379/0"
     oauth2_state_ttl_seconds: int = 300  # how long a login state token is valid

@@ -75,6 +75,8 @@ async def synthesize_endpoint(
             model=body.model,
             response_format=body.response_format,
             provider=body.provider,
+            speed=body.speed,
+            instructions=body.instructions,
         )
         return Response(
             content=audio_bytes,
