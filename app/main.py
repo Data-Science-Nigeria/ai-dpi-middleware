@@ -7,7 +7,7 @@ from app.config import settings
 from app.handlers.exception import add_exception_handlers
 from app.handlers.lifespan import lifespan
 from app.middleware.base import add_middleware
-from app.routers import base
+from app.routers import base, health
 
 
 app = FastAPI(
@@ -31,3 +31,5 @@ add_middleware(app)
 add_exception_handlers(app)
 
 app.include_router(base.router)
+app.include_router(health.router)
+
