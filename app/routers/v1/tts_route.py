@@ -78,9 +78,14 @@ async def synthesize_endpoint(
             speed=body.speed,
             instructions=body.instructions,
         )
+        media_type = _MEDIA_TYPES.get(body.response_format, "audio/wav")
         return Response(
             content=audio_bytes,
-            media_type=_MEDIA_TYPES.get(body.response_format, "audio/wav"),
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="speech.{body.response_format}"',
+                "Content-Length": str(len(audio_bytes)),
+            },
         )
     except ValueError as e:
         return Response(content=str(e), status_code=422)
