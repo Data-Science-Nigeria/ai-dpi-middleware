@@ -68,14 +68,17 @@ async def synthesize_endpoint(
     body: TTSRequest,
     _user: dict = Depends(require_roles("user", "admin")),
 ) -> Response:
-    audio_bytes = await synthesize(
-        text=body.text,
-        voice=body.voice,
-        model=body.model,
-        response_format=body.response_format,
-        provider=body.provider,
-    )
-    return Response(
-        content=audio_bytes,
-        media_type=_MEDIA_TYPES.get(body.response_format, "audio/wav"),
-    )
+    try:
+        audio_bytes = await synthesize(
+            text=body.text,
+            voice=body.voice,
+            model=body.model,
+            response_format=body.response_format,
+            provider=body.provider,
+        )
+        return Response(
+            content=audio_bytes,
+            media_type=_MEDIA_TYPES.get(body.response_format, "audio/wav"),
+        )
+    except ValueError as e:
+        return Response(content=str(e), status_code=422)
