@@ -39,8 +39,15 @@ class Settings(BaseSettings):
     oauth2_scopes: list[str] = ["openid", "profile", "email"]
 
     # Anthropic
-    anthropic_api_key: str
+    anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-4-6"
+
+    # Groq
+    groq_api_key: str | None = None
+    groq_model: str = "groq-1.5-pro"
+
+    # OpenAI
+    openai_api_key: str | None = None
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

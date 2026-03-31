@@ -1,19 +1,8 @@
 """Async wrapper around the Anthropic client."""
 
 from __future__ import annotations
-
-import anthropic
-
 from app.config import settings
-
-_client: anthropic.AsyncAnthropic | None = None
-
-
-def get_client() -> anthropic.AsyncAnthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _client
+from app.providers.anthropic import get_client
 
 
 async def chat(messages: list[dict], system: str | None = None, max_tokens: int = 1024) -> str:
