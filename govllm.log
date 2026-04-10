@@ -1,6 +1,0 @@
-2026-04-10 10:10:46.832 | INFO     | app.handlers.lifespan:lifespan:26 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
-2026-04-10 11:05:43.615 | INFO     | app.handlers.lifespan:lifespan:26 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
-2026-04-10 11:05:58.057 | INFO     | app.handlers.lifespan:lifespan:26 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
-2026-04-10 11:06:09.921 | INFO     | app.handlers.lifespan:lifespan:26 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
-2026-04-10 11:08:28.511 | INFO     | app.handlers.lifespan:lifespan:26 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
-2026-04-10 11:08:59.468 | INFO     | app.handlers.lifespan:lifespan:25 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
