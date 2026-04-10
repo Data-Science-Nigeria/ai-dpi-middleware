@@ -9,8 +9,8 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
-from app.auth.rbac import require_roles
 from app.config_yaml import get_yaml_config
+from app.middleware.rate_limit import stt_rate_limit
 from app.schemas.stt import TranscriptionResponse
 from app.services import redis as redis_service
 from app.services.stt.main import transcribe
@@ -19,6 +19,7 @@ from app.services.stt.models.registry import PROVIDER_MODELS
 router = APIRouter(prefix="/stt", tags=["STT"])
 
 _cfg = get_yaml_config()
+_rl = _cfg.security.rate_limits
 
 # Allowed audio extensions (subset of YAML security.upload.allowed_extensions)
 _AUDIO_EXTENSIONS: frozenset[str] = frozenset(
@@ -86,7 +87,7 @@ async def transcribe_endpoint(
     model: str | None = Form(None, description="STT model. Defaults to the provider's recommended model."),
     language: str | None = Form(None, description="ISO-639-1 language code. Auto-detected if omitted."),
     prompt: str | None = Form(None, description="Optional context hint to improve accuracy."),
-    _user: dict = Depends(require_roles("user", "admin")),
+    _user: dict = Depends(stt_rate_limit(user_limit=_rl.stt_user, admin_limit=_rl.stt_admin)),
 ) -> TranscriptionResponse:
 
     # Validate provider → model

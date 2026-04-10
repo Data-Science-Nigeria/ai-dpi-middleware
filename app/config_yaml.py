@@ -90,6 +90,8 @@ class RateLimitsConfig(BaseModel):
     query_direct: int = 30
     query_rag: int = 30
     session_operations: int = 60
+    stt_user: int = 10    # STT requests per minute for the `user` role
+    stt_admin: int = 60   # STT requests per minute for the `admin` role
 
 
 class UploadConfig(BaseModel):

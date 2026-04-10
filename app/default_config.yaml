@@ -71,6 +71,8 @@ security:
     query_direct: 30             # Direct query limit
     query_rag: 30                # RAG query limit
     session_operations: 60       # Session CRUD operations limit
+    stt_user: 10                 # STT requests per minute for `user` role
+    stt_admin: 60                # STT requests per minute for `admin` role
   
   # File Upload Limits
   upload:
