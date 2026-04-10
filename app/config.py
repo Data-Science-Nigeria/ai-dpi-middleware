@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str | None = None
 
+    # Spitch — required for /v1/tts/synthesize and /v1/stt/transcribe with provider=spitch
+    spitch_api_key: str | None = None
+
     # Redis
     redis_url: str = "redis://localhost:6379/0"
     oauth2_state_ttl_seconds: int = 300  # how long a login state token is valid
