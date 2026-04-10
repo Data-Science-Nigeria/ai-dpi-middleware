@@ -52,6 +52,15 @@ class TTSRequest(BaseModel):
         description=(
             "Language code. Required for Spitch (en, ha, ig, yo). "
             "Not used by Groq or OpenAI TTS."
+            "OpenAI: alloy, ash, coral, echo, fable, nova, onyx, sage, shimmer. "
+            "Spitch: see docs.spitch.app/concepts/voices (40 voices across en/ha/ig/yo)."
+        ),
+    )
+    language: str | None = Field(
+        None,
+        description=(
+            "Language code. Required for Spitch (en, ha, ig, yo). "
+            "Not used by Groq or OpenAI TTS."
         ),
     )
     response_format: ResponseFormat = Field("wav", description="Audio output format.")
