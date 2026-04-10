@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Literal
 
@@ -10,6 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from app.auth.rbac import require_roles
 from app.config_yaml import get_yaml_config
 from app.schemas.stt import TranscriptionResponse
+from app.services import redis as redis_service
 from app.services.stt.main import transcribe
 from app.services.stt.models.registry import PROVIDER_MODELS
 
@@ -35,6 +38,14 @@ _MIME_TYPES: dict[str, str] = {
     ".wma":  "audio/x-ms-wma",
     ".m4a":  "audio/mp4",
 }
+
+_CACHE_PREFIX = "stt:cache:"
+_CACHE_TTL = _cfg.chat.session_ttl_hours * 3600
+
+
+def _cache_key(file_bytes: bytes, provider: str, model: str, language: str | None, prompt: str | None) -> str:
+    digest = hashlib.sha256(file_bytes).hexdigest()
+    return f"{_CACHE_PREFIX}{digest}:{provider}:{model}:{language or ''}:{hashlib.sha256((prompt or '').encode()).hexdigest()[:8]}"
 
 
 @router.post(
@@ -113,6 +124,13 @@ async def transcribe_endpoint(
 
     content_type = _MIME_TYPES.get(ext, file.content_type or "application/octet-stream")
 
+    # Check cache before calling the provider
+    redis = redis_service.get_client()
+    key = _cache_key(file_bytes, provider, resolved_model, language, prompt)
+    cached = await redis.get(key)
+    if cached:
+        return TranscriptionResponse(**json.loads(cached))
+
     result = await transcribe(
         file_bytes=file_bytes,
         filename=file.filename or f"audio{ext}",
@@ -123,10 +141,15 @@ async def transcribe_endpoint(
         prompt=prompt,
     )
 
-    return TranscriptionResponse(
+    response = TranscriptionResponse(
         text=result["text"],
         language=result.get("language"),
         duration=result.get("duration"),
         provider=provider,
         model=resolved_model,
     )
+
+    # Store in cache
+    await redis.setex(key, _CACHE_TTL, json.dumps(response.model_dump()))
+
+    return response

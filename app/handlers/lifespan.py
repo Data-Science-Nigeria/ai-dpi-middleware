@@ -8,7 +8,6 @@ from fastapi import FastAPI
 from app.config_yaml import get_yaml_config
 from app.core.logging import logger
 from app.services import redis as redis_service
-from app.services.ai import get_client as get_ai_client
 
 
 @asynccontextmanager
@@ -29,7 +28,6 @@ async def lifespan(_app: FastAPI):
         f"security.rate_limits.global_default={cfg.security.rate_limits.global_default}"
     )
 
-    get_ai_client()             # warm up Anthropic client
     redis_service.get_client()  # warm up Redis connection
     yield
     await redis_service.close()
