@@ -56,6 +56,8 @@ class TTSRequest(BaseModel):
         ),
     )
 
+    language = None
+
     @model_validator(mode="after")
     def validate_provider_model_voice(self) -> TTSRequest:
         # 1. Provider must support the requested model
