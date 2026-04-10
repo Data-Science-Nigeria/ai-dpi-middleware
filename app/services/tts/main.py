@@ -10,6 +10,7 @@ async def synthesize(
     provider: str,
     speed: float = 1.0,
     instructions: str | None = None,
+    language = None
 ) -> bytes:
     if provider == "groq":
         return await groq_provider.synthesize(

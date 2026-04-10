@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.config_yaml import get_yaml_config
+
+_yaml_jwt = get_yaml_config().jwt
+
 
 class ClientConfig(BaseModel):
     secret: str
@@ -20,10 +24,10 @@ class Settings(BaseSettings):
     # CLIENTS={"app1":{"secret":"s3cr3t","roles":["user"]},"admin":{"secret":"s3cr3t","roles":["admin","user"]}}
     clients: dict[str, ClientConfig] = {}
 
-    # JWT (local tokens)
+    # JWT (local tokens) — defaults come from default_config.yaml, overridable via .env
     jwt_secret: str
-    jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 60
+    jwt_algorithm: str = _yaml_jwt.jwt_algorithm
+    jwt_expire_minutes: int = _yaml_jwt.jwt_expire_minutes
 
     # OIDC / OAuth2 (optional — set to enable external provider tokens & flows)
     oidc_issuer: str | None = None

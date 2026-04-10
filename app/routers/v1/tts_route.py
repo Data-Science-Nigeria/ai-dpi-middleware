@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import hashlib
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
 from app.auth.rbac import require_roles
+from app.config_yaml import get_yaml_config
 from app.schemas.tts import TTSRequest
+from app.services import redis as redis_service
 from app.services.tts.main import synthesize
 
 router = APIRouter(prefix="/tts", tags=["TTS"])
+
+_cfg = get_yaml_config()
 
 _MEDIA_TYPES = {
     "wav": "audio/wav",
@@ -18,7 +24,26 @@ _MEDIA_TYPES = {
     "aac": "audio/aac",
     "opus": "audio/ogg",
     "pcm": "audio/pcm",
+    # Spitch formats
+    "ogg_opus": "audio/ogg",
+    "webm_opus": "audio/webm",
+    "pcm_s16le": "audio/pcm",
+    "mulaw": "audio/basic",
+    "alaw": "audio/alaw",
 }
+
+_CACHE_PREFIX = "tts:cache:"
+_CACHE_TTL = _cfg.chat.session_ttl_hours * 3600
+
+
+def _cache_key(body: TTSRequest) -> str:
+    text_hash = hashlib.sha256(body.text.encode()).hexdigest()
+    instructions_hash = hashlib.sha256((body.instructions or "").encode()).hexdigest()[:8]
+    return (
+        f"{_CACHE_PREFIX}{text_hash}"
+        f":{body.provider}:{body.model}:{body.voice or ''}:{body.response_format}"
+        f":{body.speed}:{instructions_hash}:{body.language or ''}"
+    )
 
 
 @router.post(
@@ -68,6 +93,22 @@ async def synthesize_endpoint(
     body: TTSRequest,
     _user: dict = Depends(require_roles("user", "admin")),
 ) -> Response:
+    media_type = _MEDIA_TYPES.get(body.response_format, "audio/wav")
+
+    redis = redis_service.get_client()
+    key = _cache_key(body)
+    cached = await redis.get(key)
+    if cached:
+        return Response(
+            content=cached,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="speech.{body.response_format}"',
+                "Content-Length": str(len(cached)),
+                "X-Cache": "HIT",
+            },
+        )
+
     try:
         audio_bytes = await synthesize(
             text=body.text,
@@ -77,15 +118,19 @@ async def synthesize_endpoint(
             provider=body.provider,
             speed=body.speed,
             instructions=body.instructions,
-        )
-        media_type = _MEDIA_TYPES.get(body.response_format, "audio/wav")
-        return Response(
-            content=audio_bytes,
-            media_type=media_type,
-            headers={
-                "Content-Disposition": f'attachment; filename="speech.{body.response_format}"',
-                "Content-Length": str(len(audio_bytes)),
-            },
+            language=body.language,
         )
     except ValueError as e:
         return Response(content=str(e), status_code=422)
+
+    await redis.setex(key, _CACHE_TTL, audio_bytes)
+
+    return Response(
+        content=audio_bytes,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="speech.{body.response_format}"',
+            "Content-Length": str(len(audio_bytes)),
+            "X-Cache": "MISS",
+        },
+    )

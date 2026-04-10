@@ -1,0 +1,1 @@
+2026-04-10 10:10:46.832 | INFO     | app.handlers.lifespan:lifespan:26 - Config loaded — llm.backend=local, rag.top_k=10, security.rate_limits.global_default=100
