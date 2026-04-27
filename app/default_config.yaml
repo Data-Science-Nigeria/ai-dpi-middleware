@@ -1,5 +1,5 @@
 app: 
-  port: 8000
+  port: 5000
   name: "AI DPI Middleware"
   version: "0.1.0"
   debug: false
@@ -184,7 +184,7 @@ security:
 
 logging:
   level: "INFO"
-  file: "govllm.log"
+  file: "log/app.log"
 
 image:
   min_paragraph_length: 50
