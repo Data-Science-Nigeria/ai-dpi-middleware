@@ -1,10 +1,97 @@
-chroma_db:
-  path: "./chroma_db"
-  pdf_collection: "pdf_paragraphs"
+app: 
+  port: 8000
+  name: "AI DPI Middleware"
+  version: "0.1.0"
+  debug: false
 
-embedding:
-  model_path: "./model-s/African-Cross-Lingua-Embeddings-Model"
-  cross_encoder_path: "./model-s/ms-marco-MiniLM-L-6-v2"
+clients:
+  # Example client configuration (client_id: {secret, roles})
+  registry:
+    client1:
+      secret: "[secret1]"
+      roles: ["user"]
+    client2:
+      secret: "[secret2]"
+      roles: ["admin"]
+
+oidc_config:
+  use_oidc: false
+  issuer: "https://your-oidc-provider.com"
+  jwks_uri: "[jwks_uri]"
+  audience: "[audience]"
+
+oauth2_config:
+  use_oauth2: false
+  token_expire_minutes: 60
+  client_credentials:
+    client1:
+      secret: "[secret1]"
+      roles: ["user"]
+    client2:
+      secret: "[secret2]" 
+      roles: ["admin"]
+  oauth2_scopes:
+    - name: "read"
+      description: "Read access to resources"
+    - name: "write"
+      description: "Write access to resources"
+  auth_endpoint: "/auth/token"
+  token_endpoint: "/auth/token"
+  redirect_uri: "https://your-app.com/callback"
+
+llm:
+  max_context_length: 131072  # Qwen 2.5 supports 32K context
+  max_new_tokens: 8192  # Conservative output token limit
+  temperature: 0.9 
+  top_p: 0.95
+  repetition_penalty: 1.05
+  stop:
+    - "<|im_end|>"
+    - "<|end_of_text|>"
+
+  providers:
+    - model_name: "qwen/qwen2.5-7b-instruct"
+      api_key: "[LLM_API_KEY]"  # Load from environment variable LLM_API_KEY
+      provider: "local"  # Options: "local" (default), "api", "langchain", "langgraph".
+      api_url: "http://localhost:8001/v1/llm"  # Used if provider is "api"
+
+tts:
+  session_ttl_hours: 24
+  providers:
+    - model_name: "tts/fastspeech2"
+      api_key: "[TTS_API_KEY]"  # Load from environment variable TTS_API_KEY
+      provider: "local"  # Options: "local" (default), "api", "langchain", "langgraph".
+      api_url: "http://localhost:8002/v1/tts"  # Used if provider is "api"
+
+stt:
+  session_ttl_hours: 24
+  providers:
+    - model_name: "whisper-small"
+      api_key: "[STT_API_KEY]"  # Load from environment variable STT_API_KEY
+      provider: "local"  # Options: "local" (default), "api", "langchain", "langgraph".
+      api_url: "http://localhost:8003/v1/stt"  # Used if provider is "api"
+
+redis:
+  enabled: false
+  url: "[REDIS_URL]"  # Load from environment variable REDIS_URL, e.g. "redis://localhost:6379/0"
+  session_prefix: "session:"
+  rate_limit_prefix: "rate_limit:"
+
+cors:
+  allow_origins: ["*"]  # In production, specify allowed origins
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+  allow_credentials: true
+
+
+
+# chroma_db:
+#   path: "./chroma_db"
+#   pdf_collection: "pdf_paragraphs"
+
+# embedding:
+#   model_path: "./model-s/African-Cross-Lingua-Embeddings-Model"
+#   cross_encoder_path: "./model-s/ms-marco-MiniLM-L-6-v2"
 
 document:
   pdf_folder: "./data/documents"
@@ -14,19 +101,6 @@ document:
   audio_folder: "./data/audio"
   enable_pdf_ocr: true     # Enable OCR for images inside PDFs
   extract_tables: false    # Placeholder for future table extraction
-
-llm:
-  model_name: "qwen/qwen2.5-7b-instruct"
-  api_key: "[LLM_API_KEY]"  # Load from environment variable LLM_API_KEY
-  backend: "local"  # Options: "local" (default), "api". Indicates which is currently used.
-  max_context_length: 131072  # Qwen 2.5 supports 32K context
-  max_new_tokens: 8192  # Conservative output token limit
-  temperature: 0.9 
-  top_p: 0.95
-  repetition_penalty: 1.05
-  stop:
-    - "<|im_end|>"
-    - "<|end_of_text|>"
 
 speech:
   whisper_model_path: "./model-s/whisper-small"
@@ -123,3 +197,4 @@ image:
 jwt:
   jwt_algorithm: "HS256"
   jwt_expire_minutes: 60
+  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY

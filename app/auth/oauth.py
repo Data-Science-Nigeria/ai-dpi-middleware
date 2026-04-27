@@ -13,7 +13,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwk, jwt
 
-from app.config import settings
+from app.config import get_config
+
+_cfg = get_config()
 
 bearer_scheme = HTTPBearer()
 
@@ -26,13 +28,13 @@ _jwks_cache: dict | None = None
 
 async def _fetch_jwks() -> dict:
     global _jwks_cache
-    if not settings.oidc_jwks_uri:
+    if not _cfg['oidc']['jwks_uri']:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="OIDC is not configured on this server",
         )
     async with httpx.AsyncClient() as client:
-        resp = await client.get(settings.oidc_jwks_uri, timeout=10)
+        resp = await client.get(_cfg['oidc']['jwks_uri'], timeout=10)
         resp.raise_for_status()
         data: dict = resp.json()
     _jwks_cache = data
@@ -54,7 +56,7 @@ def _find_key(jwks: dict, kid: str | None) -> dict | None:
 
 async def _validate_local(token: str) -> dict:
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(token, _cfg['jwt']['secret'], algorithms=[_cfg['jwt']['algorithm']])
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -84,12 +86,12 @@ async def _validate_oidc(token: str, alg: str, kid: str | None) -> dict:
 
     try:
         public_key = jwk.construct(key_data)
-        options = {"verify_aud": bool(settings.oidc_audience)}
+        options = {"verify_aud": bool(_cfg['oidc']['audience'])}
         payload = jwt.decode(
             token,
             public_key,
             algorithms=[alg],
-            audience=settings.oidc_audience or None,
+            audience=_cfg['oidc']['audience'] or None,
             options=options,
         )
     except JWTError:

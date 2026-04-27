@@ -9,7 +9,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
-from app.config_yaml import get_yaml_config
+from app.config import get_config
 from app.middleware.rate_limit import stt_rate_limit
 from app.schemas.stt import TranscriptionResponse
 from app.services import redis as redis_service
@@ -24,16 +24,16 @@ from app.services.stt.models.spitch import (
 
 router = APIRouter(prefix="/stt", tags=["STT"])
 
-_cfg = get_yaml_config()
-_rl = _cfg.security.rate_limits
+_cfg = get_config()
+_rl = _cfg['security']['rate_limits']
 
 # Allowed audio extensions for Groq/OpenAI (from YAML security config)
 _GENERAL_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
-    ext for ext in _cfg.security.upload.allowed_extensions
+    ext for ext in _cfg['security']['upload']['allowed_extensions']
     if ext in {".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a"}
 )
 
-_MAX_FILE_BYTES: int = _cfg.speech.max_file_size_mb * 1024 * 1024
+_MAX_FILE_BYTES: int = _cfg['speech']['max_file_size_mb'] * 1024 * 1024
 _SPITCH_MAX_FILE_BYTES: int = SPITCH_MAX_FILE_MB * 1024 * 1024
 
 _MIME_TYPES: dict[str, str] = {
@@ -47,7 +47,7 @@ _MIME_TYPES: dict[str, str] = {
 }
 
 _CACHE_PREFIX = "stt:cache:"
-_CACHE_TTL = _cfg.chat.session_ttl_hours * 3600
+_CACHE_TTL = _cfg['chat']['session_ttl_hours'] * 3600
 
 
 def _cache_key(
@@ -109,7 +109,7 @@ async def transcribe_endpoint(
     prompt: str | None = Form(None, description="Context hint to improve accuracy (Groq/OpenAI only)."),
     special_words: str | None = Form(None, description="Custom vocabulary hint (Spitch only)."),
     timestamp: Literal["none", "sentence", "word"] = Form("none", description="Timestamp granularity. Spitch mansa_v1 only."),
-    _user: dict = Depends(stt_rate_limit(user_limit=_rl.stt_user, admin_limit=_rl.stt_admin)),
+    _user: dict = Depends(stt_rate_limit(user_limit=_rl['stt_user'], admin_limit=_rl['stt_admin'])),
 ) -> TranscriptionResponse:
 
     # --- Resolve default model per provider ---
@@ -154,7 +154,7 @@ async def transcribe_endpoint(
     # --- Validate file size ---
     file_bytes = await file.read()
     max_bytes = _SPITCH_MAX_FILE_BYTES if provider == "spitch" else _MAX_FILE_BYTES
-    max_mb = SPITCH_MAX_FILE_MB if provider == "spitch" else _cfg.speech.max_file_size_mb
+    max_mb = SPITCH_MAX_FILE_MB if provider == "spitch" else _cfg['speech']['max_file_size_mb']
     if len(file_bytes) > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

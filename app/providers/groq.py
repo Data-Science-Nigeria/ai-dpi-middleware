@@ -1,12 +1,10 @@
 from groq import Groq
 
-from app.config import settings
-
 _client: Groq | None = None
 
 
-def get_client() -> Groq:
+def get_client(api_key: str) -> Groq:
     global _client
     if _client is None:
-        _client = Groq(api_key=settings.groq_api_key)
+        _client = Groq(api_key=api_key)
     return _client

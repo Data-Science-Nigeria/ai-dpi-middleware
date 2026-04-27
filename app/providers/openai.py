@@ -1,12 +1,10 @@
 from openai import OpenAI
 
-from app.config import settings
-
 _client: OpenAI | None = None
 
 
-def get_client() -> OpenAI:
+def get_client(api_key: str) -> OpenAI:
     global _client
     if _client is None:
-        _client = OpenAI(api_key=settings.openai_api_key)
+        _client = OpenAI(api_key=api_key)
     return _client
