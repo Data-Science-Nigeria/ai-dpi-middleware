@@ -2,22 +2,22 @@ import sys
 
 from loguru import logger
 
-from app.config_yaml import get_yaml_config
+from app.config import get_config
 
-_cfg = get_yaml_config().logging
+_logging_cfg = get_config().get('logging', {})  # type: ignore
 
 logger.remove()
 
 logger.add(
     sys.stdout,
     format="{time} - {level} - {message}",
-    level=_cfg.level,
+    level=_logging_cfg.get('level'),
     backtrace=True,
     diagnose=True,
 )
 
 logger.add(
-    _cfg.file,
+    _logging_cfg.get('file'),
     rotation="100 MB",
     retention="3 days",
     level="DEBUG",

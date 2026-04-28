@@ -1,5 +1,8 @@
 from fastapi import APIRouter
-from app.config import settings
+from app.config import get_config
+
+_app_cfg = get_config().get('app', {})  # type: ignore
+
 
 router = APIRouter(tags=["Health"])
 
@@ -7,8 +10,8 @@ router = APIRouter(tags=["Health"])
 @router.get("/")
 async def root():
     return {
-        "name": settings.app_name,
-        "version": settings.app_version,
+        "name": _app_cfg.get('name', "AI DPI Middleware"),
+        "version": _app_cfg.get('version', "0.1.0"),
         "description": "AI-powered Digital Public Infrastructure middleware layer.",
         "docs": {
             "swagger": "/docs",
@@ -29,4 +32,4 @@ async def root():
 
 @router.get("/health")
 async def health():
-    return {"status": "ok", "version": settings.app_version}
+    return {"status": "ok", "version": _app_cfg.get('version', "0.1.0")}

@@ -8,14 +8,12 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
 from app.auth.rbac import require_roles
-from app.config_yaml import get_yaml_config
+from app.config import get_config
 from app.schemas.tts import TTSRequest
 from app.services import redis as redis_service
 from app.services.tts.main import synthesize
 
 router = APIRouter(prefix="/tts", tags=["TTS"])
-
-_cfg = get_yaml_config()
 
 _MEDIA_TYPES = {
     "wav": "audio/wav",
@@ -33,7 +31,7 @@ _MEDIA_TYPES = {
 }
 
 _CACHE_PREFIX = "tts:cache:"
-_CACHE_TTL = _cfg.chat.session_ttl_hours * 3600
+_CACHE_TTL = get_config().get('tts', {}).get('session_ttl_hours', 24) * 3600
 
 
 def _cache_key(body: TTSRequest) -> str:

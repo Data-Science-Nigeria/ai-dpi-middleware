@@ -13,7 +13,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwk, jwt
 
-from app.config import settings
+from app.config import get_config
+
+_oidc_cfg = get_config().get('oidc', {})  # type: ignore
+_jwt_cfg = get_config().get('jwt', {})  # type: ignore
+
 
 bearer_scheme = HTTPBearer()
 
@@ -26,13 +30,13 @@ _jwks_cache: dict | None = None
 
 async def _fetch_jwks() -> dict:
     global _jwks_cache
-    if not settings.oidc_jwks_uri:
+    if not _oidc_cfg.get('jwks_uri', None):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="OIDC is not configured on this server",
         )
     async with httpx.AsyncClient() as client:
-        resp = await client.get(settings.oidc_jwks_uri, timeout=10)
+        resp = await client.get(_oidc_cfg.get('jwks_uri', ''), timeout=10)
         resp.raise_for_status()
         data: dict = resp.json()
     _jwks_cache = data
@@ -54,7 +58,7 @@ def _find_key(jwks: dict, kid: str | None) -> dict | None:
 
 async def _validate_local(token: str) -> dict:
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(token, _jwt_cfg.get('secret'), algorithms=[_jwt_cfg.get('algorithm')])
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -84,12 +88,12 @@ async def _validate_oidc(token: str, alg: str, kid: str | None) -> dict:
 
     try:
         public_key = jwk.construct(key_data)
-        options = {"verify_aud": bool(settings.oidc_audience)}
+        options = {"verify_aud": bool(_oidc_cfg.get('audience', None)), "verify_exp": True}
         payload = jwt.decode(
             token,
             public_key,
             algorithms=[alg],
-            audience=settings.oidc_audience or None,
+            audience=_oidc_cfg.get('audience', None) or None,
             options=options,
         )
     except JWTError:

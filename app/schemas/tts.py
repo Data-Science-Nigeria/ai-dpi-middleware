@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from app.services.tts.models.openai import OPENAI_INSTRUCTIONS_MODELS, OPENAI_SPEED_MAX, OPENAI_SPEED_MIN
 from app.services.tts.models.registry import MODEL_VOICES, PROVIDER_MODELS
+from app.services.tts.models.spitch import SPITCH_TTS_LANGUAGES
 
 # Extended format set covers Groq, OpenAI, and Spitch formats
 ResponseFormat = Literal[
@@ -51,6 +52,15 @@ class TTSRequest(BaseModel):
         description=(
             "Language code. Required for Spitch (en, ha, ig, yo). "
             "Not used by Groq or OpenAI TTS."
+            "OpenAI: alloy, ash, coral, echo, fable, nova, onyx, sage, shimmer. "
+            "Spitch: see docs.spitch.app/concepts/voices (40 voices across en/ha/ig/yo)."
+        ),
+    )
+    language: str | None = Field(
+        None,
+        description=(
+            "Language code. Required for Spitch (en, ha, ig, yo). "
+            "Not used by Groq or OpenAI TTS."
         ),
     )
     response_format: ResponseFormat = Field("wav", description="Audio output format.")
@@ -84,6 +94,21 @@ class TTSRequest(BaseModel):
                 raise ValueError(
                     f"Voice '{self.voice}' is not available for model '{self.model}'. "
                     f"Valid voices: {sorted(valid_voices)}."
+                )
+
+        # 3. Spitch-specific rules
+        if self.provider == "spitch":
+            if not self.voice:
+                raise ValueError("Spitch TTS requires a `voice`. See docs.spitch.app/concepts/voices.")
+            if not self.language:
+                raise ValueError(
+                    f"Spitch TTS requires a `language`. "
+                    f"Supported: {sorted(SPITCH_TTS_LANGUAGES)}."
+                )
+            if self.language not in SPITCH_TTS_LANGUAGES:
+                raise ValueError(
+                    f"Language '{self.language}' is not supported by Spitch TTS. "
+                    f"Supported: {sorted(SPITCH_TTS_LANGUAGES)}."
                 )
 
         # 4. `instructions` is OpenAI gpt-4o-mini-tts only

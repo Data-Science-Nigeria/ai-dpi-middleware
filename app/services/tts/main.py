@@ -1,5 +1,6 @@
 from app.services.tts.providers import groq as groq_provider
 from app.services.tts.providers import openai as openai_provider
+from app.services.tts.providers import spitch as spitch_provider
 
 
 async def synthesize(
@@ -10,7 +11,7 @@ async def synthesize(
     provider: str,
     speed: float = 1.0,
     instructions: str | None = None,
-    language = None
+    language: str | None = None,
 ) -> bytes:
     if provider == "groq":
         return await groq_provider.synthesize(
@@ -20,5 +21,10 @@ async def synthesize(
         return await openai_provider.synthesize(
             text=text, voice=voice, model=model, response_format=response_format,
             speed=speed, instructions=instructions,
+        )
+    if provider == "spitch":
+        return await spitch_provider.synthesize(
+            text=text, voice=voice or "", model=model,
+            language=language or "en", response_format=response_format,
         )
     raise ValueError(f"Unsupported provider: {provider!r}")

@@ -1,15 +1,16 @@
 """Async wrapper around the Anthropic client."""
 
 from __future__ import annotations
-from app.config import settings
+from app.config import get_config
 from app.providers.anthropic import get_client
 
+_cfg = get_config()
 
 async def chat(messages: list[dict], system: str | None = None, max_tokens: int = 1024) -> str:
     """Send a chat request and return the text response."""
-    client = get_client()
+    client = get_client(_cfg['llm_provider']['anthropic']['api_key'])
     kwargs: dict = {
-        "model": settings.anthropic_model,
+        "model": _cfg['anthropic']['model'],
         "max_tokens": max_tokens,
         "messages": messages,
     }
@@ -22,9 +23,9 @@ async def chat(messages: list[dict], system: str | None = None, max_tokens: int 
 
 async def stream_chat(messages: list[dict], system: str | None = None, max_tokens: int = 1024):
     """Async generator that yields text chunks as they arrive."""
-    client = get_client()
+    client = get_client(_cfg['llm_provider']['anthropic']['api_key'])
     kwargs: dict = {
-        "model": settings.anthropic_model,
+        "model": _cfg['anthropic']['model'],
         "max_tokens": max_tokens,
         "messages": messages,
     }
