@@ -15,8 +15,6 @@ from app.services.tts.main import synthesize
 
 router = APIRouter(prefix="/tts", tags=["TTS"])
 
-_cfg = get_config()
-
 _MEDIA_TYPES = {
     "wav": "audio/wav",
     "mp3": "audio/mpeg",
@@ -33,7 +31,7 @@ _MEDIA_TYPES = {
 }
 
 _CACHE_PREFIX = "tts:cache:"
-_CACHE_TTL = _cfg['tts']['session_ttl_hours'] * 3600
+_CACHE_TTL = get_config().get('tts', {}).get('session_ttl_hours', 24) * 3600
 
 
 def _cache_key(body: TTSRequest) -> str:

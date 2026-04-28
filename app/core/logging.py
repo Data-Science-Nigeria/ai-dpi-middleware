@@ -4,20 +4,20 @@ from loguru import logger
 
 from app.config import get_config
 
-_cfg = get_config()
+_logging_cfg = get_config().get('logging', {})  # type: ignore
 
 logger.remove()
 
 logger.add(
     sys.stdout,
     format="{time} - {level} - {message}",
-    level=_cfg['logging']['level'],
+    level=_logging_cfg.get('level'),
     backtrace=True,
     diagnose=True,
 )
 
 logger.add(
-    _cfg['logging']['file'],
+    _logging_cfg.get('file'),
     rotation="100 MB",
     retention="3 days",
     level="DEBUG",

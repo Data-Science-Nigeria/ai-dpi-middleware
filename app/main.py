@@ -10,10 +10,12 @@ from app.middleware.base import add_middleware
 from app.routers import base, health
 
 _cfg = get_config()
+_app_cfg = _cfg.get('app', {})  # type: ignore
+_cors_cfg = _cfg.get('cors', {})  # type: ignore
 
 app = FastAPI(
-    title=_cfg['app']['name'],
-    version=_cfg['app']['version'],
+    title=_app_cfg.get('name', "AI DPI Middleware"),
+    version=_app_cfg.get('version', "0.1.0"),
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
@@ -22,10 +24,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cfg['cors']['allow_origins'],
-    allow_credentials=_cfg['cors']['allow_credentials'],
-    allow_methods=_cfg['cors']['allow_methods'],
-    allow_headers=_cfg['cors']['allow_headers'],
+    allow_origins=_cors_cfg.get('allow_origins', []),
+    allow_credentials=_cors_cfg.get('allow_credentials', False),
+    allow_methods=_cors_cfg.get('allow_methods', []),
+    allow_headers=_cors_cfg.get('allow_headers', []),
 )
 
 add_middleware(app)

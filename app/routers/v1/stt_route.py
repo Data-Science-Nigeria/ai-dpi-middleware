@@ -18,23 +18,22 @@ from app.services.stt.models.registry import PROVIDER_MODELS
 from app.services.stt.models.spitch import (
     SPITCH_ACCEPTED_EXTENSIONS,
     SPITCH_LANGUAGES,
-    SPITCH_MAX_FILE_MB,
     SPITCH_TIMESTAMP_MODELS,
 )
 
 router = APIRouter(prefix="/stt", tags=["STT"])
 
 _cfg = get_config()
-_rl = _cfg['security']['rate_limits']
+_rl = _cfg.get('security', {}).get('rate_limits', 20)
 
 # Allowed audio extensions for Groq/OpenAI (from YAML security config)
 _GENERAL_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
-    ext for ext in _cfg['security']['upload']['allowed_extensions']
+    ext for ext in _cfg.get('security', {}).get('upload', {}).get('allowed_extensions', [])
     if ext in {".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a"}
 )
 
-_MAX_FILE_BYTES: int = _cfg['speech']['max_file_size_mb'] * 1024 * 1024
-_SPITCH_MAX_FILE_BYTES: int = SPITCH_MAX_FILE_MB * 1024 * 1024
+_MAX_FILE_BYTES: int = _cfg.get('speech', {}).get('max_file_size_mb', 50) * 1024 * 1024
+_SPITCH_MAX_FILE_BYTES: int = _cfg.get('speech', {}).get('spitch_max_file_size_mb', 25) * 1024 * 1024
 
 _MIME_TYPES: dict[str, str] = {
     ".mp3":  "audio/mpeg",
@@ -47,7 +46,7 @@ _MIME_TYPES: dict[str, str] = {
 }
 
 _CACHE_PREFIX = "stt:cache:"
-_CACHE_TTL = _cfg['chat']['session_ttl_hours'] * 3600
+_CACHE_TTL = _cfg.get('chat', {}).get('session_ttl_hours', 24) * 3600
 
 
 def _cache_key(
@@ -154,7 +153,7 @@ async def transcribe_endpoint(
     # --- Validate file size ---
     file_bytes = await file.read()
     max_bytes = _SPITCH_MAX_FILE_BYTES if provider == "spitch" else _MAX_FILE_BYTES
-    max_mb = SPITCH_MAX_FILE_MB if provider == "spitch" else _cfg['speech']['max_file_size_mb']
+    max_mb = _cfg.get('speech', {}).get('max_file_size_mb', 50) if provider == "spitch" else _cfg.get('speech', {}).get('spitch_max_file_size_mb', 25)
     if len(file_bytes) > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
