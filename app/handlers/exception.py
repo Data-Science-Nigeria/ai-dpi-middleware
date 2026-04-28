@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from loguru import logger
+import traceback
 
 
 def add_exception_handlers(app: FastAPI) -> None:
@@ -38,7 +39,7 @@ def add_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
-        logger.error(f"Unhandled exception: {exc}")
+        logger.error(f"Unhandled exception: {exc} {traceback.format_exc()}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"success": False, "error": "Internal server error"},

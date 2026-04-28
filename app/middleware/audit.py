@@ -122,51 +122,40 @@ class AuditMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         except Exception as exc:
             duration_ms = (time.perf_counter() - start_time) * 1000
-            logger.error(
-                "audit.request.error",
-                extra={
-                    "trace_id": trace_id,
-                    "actor": {"user_id": user_id, "roles": roles},
-                    "http": {
-                        "method": request.method,
-                        "path": request.url.path,
-                        "query": str(request.query_params),
-                        "client_ip": client_ip,
-                        "headers": _redact_headers(dict(request.headers)),
-                    },
-                    "request_body": _safe_json(body_bytes),
-                    "duration_ms": round(duration_ms, 2),
-                    "error": str(exc),
+            logger.error("audit.request.error | " + json.dumps({
+                "trace_id": trace_id,
+                "actor": {"user_id": user_id, "roles": roles},
+                "http": {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "query": str(request.query_params),
+                    "client_ip": client_ip,
+                    "headers": _redact_headers(dict(request.headers)),
                 },
-            )
+                "request_body": _safe_json(body_bytes),
+                "duration_ms": round(duration_ms, 2),
+                "error": str(exc),
+            }))
             raise
 
         duration_ms = (time.perf_counter() - start_time) * 1000
 
         # ── Emit structured audit record ─────────────────────────────────────
-        logger.info(
-            "audit.request",
-            extra={
-                "trace_id": trace_id,
-                "actor": {
-                    "user_id": user_id,
-                    "roles": roles,
-                },
-                "http": {
-                    "method": request.method,
-                    "path": request.url.path,
-                    "query": str(request.query_params),
-                    "status_code": response.status_code,
-                    "client_ip": client_ip,
-                    "headers": _redact_headers(dict(request.headers)),
-                    "response_size_bytes": int(
-                        response.headers.get("content-length", 0)
-                    ),
-                },
-                "request_body": _safe_json(body_bytes) if self.log_request_body else None,
-                "duration_ms": round(duration_ms, 2),
+        logger.info("audit.request | " + json.dumps({
+            "trace_id": trace_id,
+            "actor": {"user_id": user_id, "roles": roles},
+            "http": {
+                "method": request.method,
+                "path": request.url.path,
+                "query": str(request.query_params),
+                "status_code": response.status_code,
+                "client_ip": client_ip,
+                "headers": _redact_headers(dict(request.headers)),
+                "response_size_bytes": int(response.headers.get("content-length", 0)),
             },
-        )
+            "request_body": _safe_json(body_bytes) if self.log_request_body else None,
+            "duration_ms": round(duration_ms, 2),
+        }))
 
         # Propagate trace ID so callers can correlate logs to a specific request
         response.headers["X-Trace-Id"] = trace_id

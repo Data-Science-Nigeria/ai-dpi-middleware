@@ -18,6 +18,7 @@ PUBLIC_PATHS = {
     "/redoc",
     "/auth/login",
     "/auth/refresh",
+    "/"
 }
 
 
@@ -51,6 +52,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 "auth.missing_token",
                 extra={"path": request.url.path, "method": request.method},
             )
+            
             return _unauthorized("Missing authentication token")
 
         try:
