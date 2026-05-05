@@ -38,14 +38,16 @@ async def stream_chat(
         ):
             yield chunk
     elif provider == "openai":
-        async for chunk in openai_provider.stream_chat(
+        async_iter = await openai_provider.stream_chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
-        ):
+        )
+        async for chunk in async_iter:
             yield chunk
     elif provider == "groq":
-        async for chunk in groq_provider.stream_chat(
+        async_iter = await groq_provider.stream_chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
-        ):
+        )
+        async for chunk in async_iter:
             yield chunk
     else:
         raise ValueError(f"Unsupported provider: {provider!r}")

@@ -11,17 +11,20 @@ async def chat(
     model: str,
     system: str | None = None,
     max_tokens: int = 1024,
+    **kwargs,
 ) -> str:
-    cfg = get_config()
-    client = get_client(cfg["llm_provider"]["anthropic"]["api_key"])
-    kwargs: dict = {
+    cfg = get_config()["llm"]["providers"]["anthropic"]
+    client = get_client(cfg["api_key"])
+    params: dict = {
         "model": model,
         "max_tokens": max_tokens,
         "messages": messages,
+        **cfg.get("kwargs", {}),
+        **kwargs,
     }
     if system:
-        kwargs["system"] = system
-    response = await client.messages.create(**kwargs)
+        params["system"] = system
+    response = await client.messages.create(**params)
     return response.content[0].text
 
 
@@ -30,16 +33,19 @@ async def stream_chat(
     model: str,
     system: str | None = None,
     max_tokens: int = 1024,
+    **kwargs,
 ):
-    cfg = get_config()
-    client = get_client(cfg["llm_provider"]["anthropic"]["api_key"])
-    kwargs: dict = {
+    cfg = get_config()["llm"]["providers"]["anthropic"]
+    client = get_client(cfg["api_key"])
+    params: dict = {
         "model": model,
         "max_tokens": max_tokens,
         "messages": messages,
+        **cfg.get("kwargs", {}),
+        **kwargs,
     }
     if system:
-        kwargs["system"] = system
-    async with client.messages.stream(**kwargs) as stream:
+        params["system"] = system
+    async with client.messages.stream(**params) as stream:
         async for text in stream.text_stream:
             yield text

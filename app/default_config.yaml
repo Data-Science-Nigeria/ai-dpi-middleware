@@ -50,10 +50,36 @@ llm:
     - "<|end_of_text|>"
 
   providers:
-    - model_name: "qwen/qwen2.5-7b-instruct"
-      api_key: "[LLM_API_KEY]"  # Load from environment variable LLM_API_KEY
-      provider: "local"  # Options: "local" (default), "api", "langchain", "langgraph".
-      api_url: "http://localhost:8001/v1/llm"  # Used if provider is "api"
+    anthropic:
+      api_key: "[ANTHROPIC_API_KEY]"
+      default_model: "claude-sonnet-4-6"
+      max_tokens: 8096
+      kwargs:
+        temperature: 0.9
+        top_p: 0.95
+    openai:
+      api_key: "[OPENAI_API_KEY]"
+      default_model: "gpt-4o"
+      max_tokens: 8096
+      kwargs:
+        temperature: 0.9
+        top_p: 0.95
+    groq:
+      api_key: "[GROQ_API_KEY]"
+      default_model: "llama-3.3-70b-versatile"
+      max_tokens: 8192
+      kwargs:
+        temperature: 0.9
+        top_p: 0.95
+    generic:
+      api_key: "[GENERIC_API_KEY]"
+      default_model: "llama-3.3-70b-versatile"
+      max_tokens: 8192
+      openai_url: "https://api.groq.com/openai/v1/chat/completions"
+      kwargs:
+        temperature: 0.9
+        top_p: 0.95
+
 
 tts:
   session_ttl_hours: 24
