@@ -79,7 +79,32 @@ llm:
       kwargs:
         temperature: 0.9
         top_p: 0.95
+  
+  vector_database:
+    provider: "chroma"
+    type: "cloud"  # Options: "cloud", "persistent", "ephemeral", "http"
+    path: "./data/chromadb"  # Used when type is "persistent"
+    http_host: "localhost"   # Used when type is "http"
+    http_port: 8000          # Used when type is "http"
+    cloud_host: "europe-west1.gcp.trychroma.com"
+    cloud_port: 443
+    tenant: "[TENANT_ID]"
+    database: "[DATABASE_NAME]"
+    API_KEY: "[API_KEY]"
+    N_RESULT: 2
+    collection_name: "default_collection"
 
+  embedding_model:
+    model: ""
+    provider: "openai"
+    API_KEY: "[API_KEY]"
+
+  rate_limit:
+    user: 10                 # Chat requests per minute for `user` role
+    admin: 60                # Chat requests per minute for `admin` role
+
+  system_prompt_path: "/path/system_prompt.yaml"
+  
 
 tts:
   session_ttl_hours: 24
@@ -89,6 +114,11 @@ tts:
       provider: "local"  # Options: "local" (default), "api", "langchain", "langgraph".
       api_url: "http://localhost:8002/v1/tts"  # Used if provider is "api"
 
+  rate_limit:
+    user: 10                 # TTS requests per minute for `user` role
+    admin: 60                # TTS requests per minute for `admin` role
+
+
 stt:
   session_ttl_hours: 24
   providers:
@@ -96,6 +126,10 @@ stt:
       api_key: "[STT_API_KEY]"  # Load from environment variable STT_API_KEY
       provider: "local"  # Options: "local" (default), "api", "langchain", "langgraph".
       api_url: "http://localhost:8003/v1/stt"  # Used if provider is "api"
+
+  rate_limit:
+    user: 10                 # STT requests per minute for `user` role
+    admin: 60                # STT requests per minute for `admin` role
 
 redis:
   enabled: false

@@ -50,3 +50,13 @@ class ChatResponse(BaseModel):
     reply: str
     provider: str
     model: str
+
+class EmbeddingResponse(BaseModel):
+    status: bool = True
+    message: str = "Creating status successfully"
+
+
+class EmbeddingRequest(BaseModel):
+    text: str
+    model: str
+    collection_name: str | None = None

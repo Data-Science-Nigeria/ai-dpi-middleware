@@ -7,13 +7,15 @@ import hashlib
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
-from app.auth.rbac import require_roles
 from app.config import get_config
+from app.middleware.rate_limit import rate_limit
 from app.schemas.tts import TTSRequest
 from app.services import redis as redis_service
 from app.services.tts.main import synthesize
 
 router = APIRouter(prefix="/tts", tags=["TTS"])
+_cfg = get_config()
+_rl = _cfg.get('tts', {}).get('rate_limit', {})
 
 _MEDIA_TYPES = {
     "wav": "audio/wav",
@@ -89,7 +91,7 @@ Raw audio bytes with the appropriate `Content-Type` header (`audio/wav` by defau
 )
 async def synthesize_endpoint(
     body: TTSRequest,
-    _user: dict = Depends(require_roles("user", "admin")),
+    _user: dict = Depends(rate_limit(part = "tts", user_limit=_rl['user'], admin_limit=_rl['admin'])),
 ) -> Response:
     media_type = _MEDIA_TYPES.get(body.response_format, "audio/wav")
 

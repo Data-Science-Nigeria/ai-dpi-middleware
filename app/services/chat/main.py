@@ -7,6 +7,7 @@ async def chat(
     messages: list[dict],
     provider: str,
     model: str,
+    context: str | None = None,
     system: str | None = None,
     max_tokens: int = 1024,
 ) -> str:
