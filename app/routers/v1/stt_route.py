@@ -10,7 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from app.config import get_config
-from app.middleware.rate_limit import stt_rate_limit
+from app.middleware.rate_limit import rate_limit
 from app.schemas.stt import TranscriptionResponse
 from app.services import redis as redis_service
 from app.services.stt.main import transcribe
@@ -24,7 +24,7 @@ from app.services.stt.models.spitch import (
 router = APIRouter(prefix="/stt", tags=["STT"])
 
 _cfg = get_config()
-_rl = _cfg.get('security', {}).get('rate_limits', 20)
+_rl = _cfg.get('stt', {}).get('rate_limit', {})
 
 # Allowed audio extensions for Groq/OpenAI (from YAML security config)
 _GENERAL_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
@@ -108,7 +108,7 @@ async def transcribe_endpoint(
     prompt: str | None = Form(None, description="Context hint to improve accuracy (Groq/OpenAI only)."),
     special_words: str | None = Form(None, description="Custom vocabulary hint (Spitch only)."),
     timestamp: Literal["none", "sentence", "word"] = Form("none", description="Timestamp granularity. Spitch mansa_v1 only."),
-    _user: dict = Depends(stt_rate_limit(user_limit=_rl['stt_user'], admin_limit=_rl['stt_admin'])),
+    _user: dict = Depends(rate_limit(part = "stt", user_limit=_rl['user'], admin_limit=_rl['admin'])),
 ) -> TranscriptionResponse:
 
     # --- Resolve default model per provider ---

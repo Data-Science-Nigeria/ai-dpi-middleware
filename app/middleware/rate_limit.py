@@ -12,7 +12,7 @@ from app.services import redis as redis_service
 _KEY_PREFIX = "ratelimit"
 
 
-def stt_rate_limit(user_limit: int, admin_limit: int):
+def rate_limit(part, user_limit: int, admin_limit: int):
     """Return a FastAPI dependency that enforces per-role, per-minute rate limits.
 
     The window is a 60-second tumbling window keyed to the current UTC minute.
@@ -29,7 +29,7 @@ def stt_rate_limit(user_limit: int, admin_limit: int):
 
         sub: str = user.get("sub", "anonymous")
         window = int(time.time() // 60)          # current UTC minute bucket
-        key = f"{_KEY_PREFIX}:stt:{sub}:{window}"
+        key = f"{_KEY_PREFIX}:{part}:{sub}:{window}"
 
         redis = redis_service.get_client()
         count = await redis.incr(key)
@@ -42,7 +42,7 @@ def stt_rate_limit(user_limit: int, admin_limit: int):
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=(
                     f"Rate limit exceeded. {role_label.capitalize()} accounts are "
-                    f"allowed {limit} STT request(s) per minute."
+                    f"allowed {limit} {part} request(s) per minute."
                 ),
                 headers={"Retry-After": "60"},
             )
