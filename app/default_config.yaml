@@ -103,7 +103,7 @@ llm:
     user: 10                 # Chat requests per minute for `user` role
     admin: 60                # Chat requests per minute for `admin` role
 
-  system_prompt_path: "/path/system_prompt.yaml"
+  system_prompt_path: "/path/system_prompt.yaml" # If you don't want to havea system prompt
   
 
 tts:

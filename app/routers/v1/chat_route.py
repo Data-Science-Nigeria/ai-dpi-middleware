@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from app.auth.rbac import require_roles
 from app.config import get_config
 from app.middleware.rate_limit import rate_limit
-from app.schemas.ai import ChatRequest, ChatResponse, EmbeddingRequest, EmbeddingResponse
+from app.schemas.ai import ChatRequest, ChatResponse
 from app.services.chat import main as chat_service
 from app.services.embedding import main as embedding_service
 from app.services.vectordb import main as vectordb
@@ -27,7 +27,7 @@ async def chat(
 
     embedding = await embedding_service.get_embedding(text=body.messages[0].content, model=body.model)
     context = await vectordb.retrieve(embedding=embedding, collection_name=get_config()["llm"]["vector_database"]['collection_name'])
-    
+
     reply = await chat_service.chat(
         context= context,
         messages=msgs,

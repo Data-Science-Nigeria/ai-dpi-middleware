@@ -5,6 +5,7 @@ async def chat(
     model: str,
     system: str | None = None,
     max_tokens: int = 1024,
+    documents: list[str] | None = None,
     **kwargs,
 ) -> str:
     return await generic.chat(
@@ -14,6 +15,7 @@ async def chat(
         provider="groq",
         url="https://api.groq.com/openai/v1/chat/completions",
         max_tokens=max_tokens,
+        documents=documents,
         **kwargs,
     )
 
