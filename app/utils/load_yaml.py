@@ -6,7 +6,9 @@ import os
 import re
 import yaml
 from typing import Any
+from dotenv import load_dotenv
 
+load_dotenv()
 
 _ENV_PLACEHOLDER = re.compile(r"\[([A-Z][A-Z0-9_]*)\]")
 

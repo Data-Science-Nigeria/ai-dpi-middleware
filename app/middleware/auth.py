@@ -18,7 +18,7 @@ PUBLIC_PATHS = {
     "/redoc",
     "/auth/login",
     "/auth/refresh",
-    "/"
+    "/api/v1/auth/token"
 }
 
 

@@ -11,7 +11,7 @@ from app.core.logging import logger
 
 
 # Routes that should never appear in audit logs (health checks, metrics, etc.)
-EXCLUDED_PATHS = {"/health", "/healthz", "/metrics", "/favicon.ico"}
+EXCLUDED_PATHS = {"/health", "/healthz", "/metrics", "/favicon.ico", "/api/v1/auth/token"}
 
 # Headers that must never be logged
 SENSITIVE_HEADERS = {"authorization", "cookie", "set-cookie", "x-api-key"}

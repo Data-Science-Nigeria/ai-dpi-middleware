@@ -4,37 +4,37 @@ app:
   version: "0.1.0"
   debug: false
 
-clients:
-  # Example client configuration (client_id: {secret, roles})
-  registry:
-    client1:
-      secret: "[secret1]"
-      roles: ["user"]
-    client2:
-      secret: "[secret2]"
-      roles: ["admin"]
-
 oidc_config:
   use_oidc: false
   issuer: "https://your-oidc-provider.com"
   jwks_uri: "[jwks_uri]"
   audience: "[audience]"
 
+jwt:
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 60
+  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY
+
 oauth2_config:
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 60
+  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY
+
   use_oauth2: false
   token_expire_minutes: 60
   client_credentials:
     client1:
-      secret: "[secret1]"
+      secret: "[SECRET1]"
       roles: ["user"]
     client2:
-      secret: "[secret2]" 
+      secret: "[SECRET2]" 
       roles: ["admin"]
   oauth2_scopes:
     - name: "read"
       description: "Read access to resources"
     - name: "write"
       description: "Write access to resources"
+  
   auth_endpoint: "/auth/token"
   token_endpoint: "/auth/token"
   redirect_uri: "https://your-app.com/callback"
@@ -49,7 +49,7 @@ llm:
     - "<|im_end|>"
     - "<|end_of_text|>"
 
-  providers:
+  providers:                              # This should follow the order of the model if no provider is specified.
     anthropic:
       api_key: "[ANTHROPIC_API_KEY]"
       default_model: "claude-sonnet-4-6"
@@ -253,8 +253,3 @@ image:
   enable_preprocessing: true
   enable_quality_validation: true
   quality_threshold: 0.2  # Fraction of "garbage" characters allowed
-
-jwt:
-  jwt_algorithm: "HS256"
-  jwt_expire_minutes: 60
-  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY

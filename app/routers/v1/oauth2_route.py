@@ -16,16 +16,17 @@ router = APIRouter(prefix="/auth/oauth2", tags=["OAuth2"])
 
 _STATE_PREFIX = "oauth2:state:"
 
-_oauth2_cfg = get_config().get('oauth2', {})  # type: ignore
+_oauth2_cfg = get_config().get('oauth2_config', {})  # type: ignore
+
 def _require_oauth2_config() -> None:
     missing = [
         field
         for field, value in {
-            "oauth2_client_id": _oauth2_cfg('client_id'),
+            "oauth2_client_id": _oauth2_cfg['client_id'],
             "oauth2_client_secret": _oauth2_cfg('client_secret'),
-            "oauth2_authorization_endpoint": _oauth2_cfg('authorization_endpoint'),
-            "oauth2_token_endpoint": _oauth2_cfg('token_endpoint'),
-            "oauth2_redirect_uri": _oauth2_cfg('redirect_uri'),
+            "oauth2_authorization_endpoint": _oauth2_cfg.get('auth_endpoint', ""),
+            "oauth2_token_endpoint": _oauth2_cfg.get('token_endpoint', ""),
+            "oauth2_redirect_uri": _oauth2_cfg.get('redirect_uri', ""),
         }.items()
         if not value
     ]
@@ -39,7 +40,6 @@ def _require_oauth2_config() -> None:
 # ---------------------------------------------------------------------------
 # Authorization Code Flow
 # ---------------------------------------------------------------------------
-
 @router.get("/login")
 async def oauth2_login() -> RedirectResponse:
     """Redirect the user to the external OAuth2 provider's authorization page."""
