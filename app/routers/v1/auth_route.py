@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt
 
+from app.auth.oauth import get_current_user
 from app.config import get_config
 from app.schemas.auth import TokenRequest, TokenResponse
 
@@ -35,3 +36,13 @@ async def issue_token(body: TokenRequest) -> TokenResponse:
                        key =_oauth2_cfg.get("jwt_secret_key", ""), 
                        algorithm=_oauth2_cfg.get('algorithm', 'HS256'))
     return TokenResponse(access_token=token, expires_in=expires_in, roles=roles)
+
+
+@router.get("/me")
+async def verify_me(user: dict = Depends(get_current_user)):
+    return user
+
+@router.get("/protected_route")
+async def protected_route(user: dict = Depends(get_current_user)):
+    return {"message": "User can acess the protected route."}
+

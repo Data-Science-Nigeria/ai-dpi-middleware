@@ -4,40 +4,24 @@ app:
   version: "0.1.0"
   debug: false
 
-oidc_config:
-  use_oidc: false
-  issuer: "https://your-oidc-provider.com"
-  jwks_uri: "[jwks_uri]"
-  audience: "[audience]"
+auth:
+  - issuer: "[KEY_CLOAK_ISSUER]"
+    jwks_uri: "[jwks_uri]"
+    audience: "account"
+    algorithm: "RS256" 
+    type: "online"
 
-jwt:
-  jwt_algorithm: "HS256"
-  jwt_expire_minutes: 60
-  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY
+  - issuer: "[INTROSPECT_ISSUER]"
+    introspect_api: "api/instrospect"
+    client_id: "[INTRO_ID]"
+    client_secret: "[INTRO_SECRET]"
+    type: "online"
 
-oauth2_config:
-  jwt_algorithm: "HS256"
-  jwt_expire_minutes: 60
-  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY
 
-  use_oauth2: false
-  token_expire_minutes: 60
-  client_credentials:
-    client1:
-      secret: "[SECRET1]"
-      roles: ["user"]
-    client2:
-      secret: "[SECRET2]" 
-      roles: ["admin"]
-  oauth2_scopes:
-    - name: "read"
-      description: "Read access to resources"
-    - name: "write"
-      description: "Write access to resources"
-  
-  auth_endpoint: "/auth/token"
-  token_endpoint: "/auth/token"
-  redirect_uri: "https://your-app.com/callback"
+  - issuer: "[LOCAL]"
+    key: "Hello World"
+    type: "local"
+
 
 llm:
   max_context_length: 131072  # Qwen 2.5 supports 32K context
