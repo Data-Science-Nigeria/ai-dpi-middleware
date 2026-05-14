@@ -3,14 +3,14 @@ from __future__ import annotations
 import time
 import httpx
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 
 from app.config import get_config
 
-_auth_cfgs = get_config().get("auth", [])
+_auth_cfgs = get_config().get("auth", {}).get("issuers", [])
 
-bearer_scheme = HTTPBearer()
+oauth2_scheme = OAuth2PasswordBearer("/api/v1/auth/token")
 
 # -----------------------------
 # JWKS CACHE (fixed + TTL)
@@ -179,11 +179,8 @@ async def _validate_with_provider(token: str, cfg: dict) -> dict:
 # MAIN DEPENDENCY
 # -----------------------------
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    token: str =  Depends(oauth2_scheme),
 ) -> dict:
-
-    token = credentials.credentials
-
     for cfg in _auth_cfgs:
         try:
             return await _validate_with_provider(token, cfg)
