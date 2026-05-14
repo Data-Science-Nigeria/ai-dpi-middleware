@@ -19,17 +19,16 @@ auth:
       type: "online"
 
     - issuer: "[LOCAL]"
-      key: "Hello World"
+      key: "[KEY]"
       type: "local"
-  
-  client_credentials:
-    client1:
-      secret: "[SECRET1]"
-      roles: ["user"]
-    client2:
-      secret: "[SECRET2]" 
-      roles: ["admin"]
-    jwt_expire_minutes: 60  
+      algorithm: HS256
+      client1:
+        secret: "[SECRET1]"
+        roles: ["user"]
+      client2:
+        secret: "[SECRET2]" 
+        roles: ["admin"]
+      expire_minutes: 60  
 
 llm:
   max_context_length: 131072  # Qwen 2.5 supports 32K context
@@ -74,7 +73,7 @@ llm:
   
   vector_database:
     provider: "chroma"
-    type: "cloud"  # Options: "cloud", "persistent", "ephemeral", "http"
+    type: "persistent"  # Options: "cloud", "persistent", "ephemeral", "http"
     path: "./data/chromadb"  # Used when type is "persistent"
     http_host: "localhost"   # Used when type is "http"
     http_port: 8000          # Used when type is "http"
@@ -87,9 +86,9 @@ llm:
     collection_name: "default_collection"
 
   embedding_model:
-    model: ""
+    model: "text-embedding-3-small"
     provider: "openai"
-    API_KEY: "[API_KEY]"
+    API_KEY: "[OPENAI_API_KEY]"
 
   rate_limit:
     user: 10                 # Chat requests per minute for `user` role

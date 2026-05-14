@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 import httpx
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer
 from jose import jwt
 
 from app.config import get_config
@@ -93,14 +93,16 @@ async def _validate_introspection(token: str, cfg: dict) -> dict:
 # -----------------------------
 async def _validate_hs256(token: str, cfg: dict) -> dict:
     try:
-        return jwt.decode(
+        resp =  jwt.decode(
             token,
             cfg["key"],
-            algorithms=[cfg["algorithm"]],
-            audience=cfg.get("audience"),
-            issuer=cfg.get("issuer"),
+            algorithms=[cfg.get('algorithm', 'HS256')],
+            # audience=cfg.get("audience"),
+            # issuer=cfg.get("issuer"),
         )
-    except Exception:
+        return resp
+    except Exception as e:
+        print("JWT ERROR:", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid local token"
@@ -179,12 +181,15 @@ async def _validate_with_provider(token: str, cfg: dict) -> dict:
 # MAIN DEPENDENCY
 # -----------------------------
 async def get_current_user(
-    token: str =  Depends(oauth2_scheme),
+    token: str = Depends(oauth2_scheme),
 ) -> dict:
+    if isinstance(token, HTTPAuthorizationCredentials):
+        token = token.credentials
+
     for cfg in _auth_cfgs:
         try:
             return await _validate_with_provider(token, cfg)
-        except HTTPException as _:
+        except HTTPException:
             continue
 
     raise HTTPException(

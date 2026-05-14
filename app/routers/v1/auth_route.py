@@ -9,36 +9,36 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt
 
 from app.auth.oauth import get_current_user
-from app.config import get_config
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas.auth import TokenResponse
+from app.auth.oauth import  _auth_cfgs
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-_oauth2_cfg = get_config().get('auth', {})
-_clients_cfg = _oauth2_cfg.get("client_credentials", {})
 
 @router.post("/token")
 async def issue_token(body: Annotated[OAuth2PasswordRequestForm, Depends()]) -> TokenResponse:
-    """Exchange client credentials for a JWT containing the client's roles."""
-    print(body)
-    client = _clients_cfg.get(body.username, None)
-    print(client['secret'])
+    """Exchange client credentials for a JWT containing the client's roles."""    
+    for cfg in _auth_cfgs:
+        if cfg.get("type", "") == "local":
+            client = cfg.get(body.username, None)
+            
+            if client is None or client['secret'] != body.password:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    if client is None or client['secret'] != body.password:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            roles = client['roles']
+            expires_in = cfg.get('expire_minutes') * 60
+            payload = {
+                "sub": str(body.client_id),
+                "roles": roles,
+                "exp": datetime.now(timezone.utc) + timedelta(minutes=expires_in),
+            }
+            token = jwt.encode(claims = payload, 
+                            key =cfg.get("key", ""), 
+                            algorithm=cfg.get('algorithm', 'HS256'))
+            return TokenResponse(access_token=token, expires_in=expires_in, roles=roles)
 
-    roles = client['roles']
-    expires_in = _clients_cfg.get('jwt_expire_minutes') * 60
-    payload = {
-        "sub": body.client_id,
-        "roles": roles,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=expires_in),
-    }
-    token = jwt.encode(claims = payload, 
-                       key =_oauth2_cfg.get("jwt_secret_key", ""), 
-                       algorithm=_oauth2_cfg.get('algorithm', 'HS256'))
-    return TokenResponse(access_token=token, expires_in=expires_in, roles=roles)
+    raise HTTPException(detail="Error Generating token", status_code=400)
 
 
 @router.get("/me")
