@@ -4,40 +4,31 @@ app:
   version: "0.1.0"
   debug: false
 
-clients:
-  # Example client configuration (client_id: {secret, roles})
-  registry:
-    client1:
-      secret: "[secret1]"
-      roles: ["user"]
-    client2:
-      secret: "[secret2]"
-      roles: ["admin"]
+auth:
+  issuers:
+    - issuer: "[KEY_CLOAK_ISSUER]"
+      jwks_uri: "[jwks_uri]"
+      audience: "account"
+      algorithm: "RS256" 
+      type: "online"
 
-oidc_config:
-  use_oidc: false
-  issuer: "https://your-oidc-provider.com"
-  jwks_uri: "[jwks_uri]"
-  audience: "[audience]"
+    - issuer: "[INTROSPECT_ISSUER]"
+      introspect_api: "api/instrospect"
+      client_id: "[INTRO_ID]"
+      client_secret: "[INTRO_SECRET]"
+      type: "online"
 
-oauth2_config:
-  use_oauth2: false
-  token_expire_minutes: 60
-  client_credentials:
-    client1:
-      secret: "[secret1]"
-      roles: ["user"]
-    client2:
-      secret: "[secret2]" 
-      roles: ["admin"]
-  oauth2_scopes:
-    - name: "read"
-      description: "Read access to resources"
-    - name: "write"
-      description: "Write access to resources"
-  auth_endpoint: "/auth/token"
-  token_endpoint: "/auth/token"
-  redirect_uri: "https://your-app.com/callback"
+    - issuer: "[LOCAL]"
+      key: "[KEY]"
+      type: "local"
+      algorithm: HS256
+      client1:
+        secret: "[SECRET1]"
+        roles: ["user"]
+      client2:
+        secret: "[SECRET2]" 
+        roles: ["admin"]
+      expire_minutes: 60  
 
 llm:
   max_context_length: 131072  # Qwen 2.5 supports 32K context
@@ -49,7 +40,7 @@ llm:
     - "<|im_end|>"
     - "<|end_of_text|>"
 
-  providers:
+  providers:                              # This should follow the order of the model if no provider is specified.
     anthropic:
       api_key: "[ANTHROPIC_API_KEY]"
       default_model: "claude-sonnet-4-6"
@@ -82,7 +73,7 @@ llm:
   
   vector_database:
     provider: "chroma"
-    type: "cloud"  # Options: "cloud", "persistent", "ephemeral", "http"
+    type: "persistent"  # Options: "cloud", "persistent", "ephemeral", "http"
     path: "./data/chromadb"  # Used when type is "persistent"
     http_host: "localhost"   # Used when type is "http"
     http_port: 8000          # Used when type is "http"
@@ -95,15 +86,15 @@ llm:
     collection_name: "default_collection"
 
   embedding_model:
-    model: ""
+    model: "text-embedding-3-small"
     provider: "openai"
-    API_KEY: "[API_KEY]"
+    API_KEY: "[OPENAI_API_KEY]"
 
   rate_limit:
     user: 10                 # Chat requests per minute for `user` role
     admin: 60                # Chat requests per minute for `admin` role
 
-  system_prompt_path: "/path/system_prompt.yaml"
+  system_prompt_path: "/path/system_prompt.yaml" # If you don't want to havea system prompt
   
 
 tts:
@@ -145,13 +136,13 @@ cors:
 
 
 
-# chroma_db:
-#   path: "./chroma_db"
-#   pdf_collection: "pdf_paragraphs"
+# # chroma_db:
+# #   path: "./chroma_db"
+# #   pdf_collection: "pdf_paragraphs"
 
-# embedding:
-#   model_path: "./model-s/African-Cross-Lingua-Embeddings-Model"
-#   cross_encoder_path: "./model-s/ms-marco-MiniLM-L-6-v2"
+# # embedding:
+# #   model_path: "./model-s/African-Cross-Lingua-Embeddings-Model"
+# #   cross_encoder_path: "./model-s/ms-marco-MiniLM-L-6-v2"
 
 document:
   pdf_folder: "./data/documents"
@@ -162,99 +153,94 @@ document:
   enable_pdf_ocr: true     # Enable OCR for images inside PDFs
   extract_tables: false    # Placeholder for future table extraction
 
-speech:
-  whisper_model_path: "./model-s/whisper-small"
-  sampling_rate: 16000
-  confidence_threshold: 0.6
-  use_segmentation: true
-  language: "en"
-  device: "auto" # "auto" for auto-detect, "cuda" for GPU, "cpu" for CPU
-  max_file_size_mb: 50
+# speech:
+#   whisper_model_path: "./model-s/whisper-small"
+#   sampling_rate: 16000
+#   confidence_threshold: 0.6
+#   use_segmentation: true
+#   language: "en"
+#   device: "auto" # "auto" for auto-detect, "cuda" for GPU, "cpu" for CPU
+#   max_file_size_mb: 50
 
-rag:
-  minimum_relevance_threshold: 0.5  # Minimum cross-encoder score for document relevance (0-1 scale)
-  top_k: 10  # Number of candidates to retrieve before reranking
-  rerank_k: 3  # Number of documents to return after reranking
-  retrieval_presets:
-    simple:  # For simple factual queries
-      top_k: 5
-      rerank_k: 2
-    standard:  # Default balanced retrieval
-      top_k: 10
-      rerank_k: 3
-    deep:  # For complex analytical queries
-      top_k: 20
-      rerank_k: 5
+# rag:
+#   minimum_relevance_threshold: 0.5  # Minimum cross-encoder score for document relevance (0-1 scale)
+#   top_k: 10  # Number of candidates to retrieve before reranking
+#   rerank_k: 3  # Number of documents to return after reranking
+#   retrieval_presets:
+#     simple:  # For simple factual queries
+#       top_k: 5
+#       rerank_k: 2
+#     standard:  # Default balanced retrieval
+#       top_k: 10
+#       rerank_k: 3
+#     deep:  # For complex analytical queries
+#       top_k: 20
+#       rerank_k: 5
 
-chat:
-  history_limit: 10
-  session_ttl_hours: 24
+# chat:
+#   history_limit: 10
+#   session_ttl_hours: 24
 
-smart_chat:
-  confidence_threshold: 0.7
+# smart_chat:
+#   confidence_threshold: 0.7
 
-security:
-  enable_content_sanitization: true  # Sanitize retrieved content to prevent prompt injection
-  strict_sanitization_mode: false  # If true, removes suspicious content; if false, logs warnings only
-  # Rate Limiting (requests per minute)
-  rate_limits:
-    storage_uri: "memory://"         # Storage backend: "memory://" for in-memory, "redis://localhost:6379" for Redis (in production)
-    global_default: 100          # Default limit for all endpoints
-    upload_single: 10            # Single file upload limit
-    upload_multi: 5              # Multi-file upload limit
-    query_direct: 30             # Direct query limit
-    query_rag: 30                # RAG query limit
-    session_operations: 60       # Session CRUD operations limit
-    stt_user: 10                 # STT requests per minute for `user` role
-    stt_admin: 60                # STT requests per minute for `admin` role
+# security:
+#   enable_content_sanitization: true  # Sanitize retrieved content to prevent prompt injection
+#   strict_sanitization_mode: false  # If true, removes suspicious content; if false, logs warnings only
+#   # Rate Limiting (requests per minute)
+#   rate_limits:
+#     storage_uri: "memory://"         # Storage backend: "memory://" for in-memory, "redis://localhost:6379" for Redis (in production)
+#     global_default: 100          # Default limit for all endpoints
+#     upload_single: 10            # Single file upload limit
+#     upload_multi: 5              # Multi-file upload limit
+#     query_direct: 30             # Direct query limit
+#     query_rag: 30                # RAG query limit
+#     session_operations: 60       # Session CRUD operations limit
+#     stt_user: 10                 # STT requests per minute for `user` role
+#     stt_admin: 60                # STT requests per minute for `admin` role
   
-  # File Upload Limits
-  upload:
-    max_file_size_mb: 50         # Maximum file size in megabytes
-    allowed_extensions:          # Whitelist of allowed file extensions
-      - .pdf
-      - .docx
-      - .doc
-      - .txt
-      - .rtf
-      - .odt
-      - .pptx
-      - .ppt
-      - .png
-      - .jpg
-      - .jpeg
-      - .bmp
-      - .tiff
-      - .gif
-      - .mp3
-      - .wav
-      - .flac
-      - .aac
-      - .ogg
-      - .wma
-      - .m4a
+#   # File Upload Limits
+#   upload:
+#     max_file_size_mb: 50         # Maximum file size in megabytes
+#     allowed_extensions:          # Whitelist of allowed file extensions
+#       - .pdf
+#       - .docx
+#       - .doc
+#       - .txt
+#       - .rtf
+#       - .odt
+#       - .pptx
+#       - .ppt
+#       - .png
+#       - .jpg
+#       - .jpeg
+#       - .bmp
+#       - .tiff
+#       - .gif
+#       - .mp3
+#       - .wav
+#       - .flac
+#       - .aac
+#       - .ogg
+#       - .wma
+#       - .m4a
   
-  # Allowed departments (whitelist)
-  allowed_departments:
-    - mosti
-    - health
-    - education
-    - finance
-    - "test"
+#   # Allowed departments (whitelist)
+#   allowed_departments:
+#     - mosti
+#     - health
+#     - education
+#     - finance
+#     - "test"
 
 logging:
   level: "INFO"
   file: "log/app.log"
 
-image:
-  min_paragraph_length: 50
-  lang: "eng"
-  tesseract_path: null
-  enable_preprocessing: true
-  enable_quality_validation: true
-  quality_threshold: 0.2  # Fraction of "garbage" characters allowed
-
-jwt:
-  jwt_algorithm: "HS256"
-  jwt_expire_minutes: 60
-  jwt_secret_key: "[JWT_SECRET]"  # Load from environment variable JWT_SECRET_KEY
+# image:
+#   min_paragraph_length: 50
+#   lang: "eng"
+#   tesseract_path: null
+#   enable_preprocessing: true
+#   enable_quality_validation: true
+#   quality_threshold: 0.2  # Fraction of "garbage" characters allowed

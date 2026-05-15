@@ -1,142 +1,198 @@
-"""JWT bearer token validation.
-
-Supports two strategies, selected automatically by the token's `alg` header:
-
-- HS256  → local token issued by POST /v1/auth/token
-- RS256 / ES256  → external OIDC token validated against the provider's JWKS
-"""
-
 from __future__ import annotations
 
+import time
 import httpx
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwk, jwt
+from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer
+from jose import jwt
 
 from app.config import get_config
 
-_oidc_cfg = get_config().get('oidc', {})  # type: ignore
-_jwt_cfg = get_config().get('jwt', {})  # type: ignore
+_auth_cfgs = get_config().get("auth", {}).get("issuers", [])
+
+oauth2_scheme = OAuth2PasswordBearer("/api/v1/auth/token")
+
+# -----------------------------
+# JWKS CACHE (fixed + TTL)
+# -----------------------------
+_jwks_cache: dict[str, tuple[float, dict]] = {}  # jwk_uri -> (timestamp, data)
+JWKS_TTL = 300  # 5 minutes
+
+_http_client = httpx.AsyncClient(timeout=10)
 
 
-bearer_scheme = HTTPBearer()
+# -----------------------------
+# JWKS FETCH WITH CACHE
+# -----------------------------
+async def _fetch_jwks(jwk_uri: str) -> dict:
+    now = time.time()
 
-_LOCAL_ALGORITHMS = {"HS256", "HS384", "HS512"}
-_OIDC_ALGORITHMS = {"RS256", "RS384", "RS512", "ES256", "ES384", "ES512"}
+    cached = _jwks_cache.get(jwk_uri)
+    if cached:
+        ts, data = cached
+        if now - ts < JWKS_TTL:
+            return data
 
-# In-process JWKS cache — refreshed automatically on key-not-found
-_jwks_cache: dict | None = None
-
-
-async def _fetch_jwks() -> dict:
-    global _jwks_cache
-    if not _oidc_cfg.get('jwks_uri', None):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="OIDC is not configured on this server",
-        )
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(_oidc_cfg.get('jwks_uri', ''), timeout=10)
+    try:
+        resp = await _http_client.get(jwk_uri)
         resp.raise_for_status()
-        data: dict = resp.json()
-    _jwks_cache = data
-    return data
+        data = resp.json()
 
+        _jwks_cache[jwk_uri] = (now, data)
+        return data
 
-async def _get_jwks() -> dict:
-    if _jwks_cache is None:
-        return await _fetch_jwks()
-    return _jwks_cache
-
-
-def _find_key(jwks: dict, kid: str | None) -> dict | None:
-    for key in jwks.get("keys", []):
-        if kid is None or key.get("kid") == kid:
-            return key
-    return None
-
-
-async def _validate_local(token: str) -> dict:
-    try:
-        payload = jwt.decode(token, _jwt_cfg.get('secret'), algorithms=[_jwt_cfg.get('algorithm')])
-    except JWTError:
+    except Exception:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Empty token payload")
-    return payload
-
-
-async def _validate_oidc(token: str, alg: str, kid: str | None) -> dict:
-    jwks = await _get_jwks()
-    key_data = _find_key(jwks, kid)
-
-    if key_data is None:
-        # Stale cache — refresh once
-        jwks = await _fetch_jwks()
-        key_data = _find_key(jwks, kid)
-
-    if key_data is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token signing key not found",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to fetch JWKS"
         )
 
+
+# -----------------------------
+# INTROSPECTION
+# -----------------------------
+async def _validate_introspection(token: str, cfg: dict) -> dict:
+    url = cfg.get("introspect_api")
+    client_id = cfg.get("client_id")
+    client_secret = cfg.get("client_secret")
+
+    if not url or not client_id or not client_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Introspection not configured"
+        )
+
+    data = {
+        "token": token,
+        "client_id": client_id,
+        "client_secret": client_secret
+    }
+
     try:
-        public_key = jwk.construct(key_data)
-        options = {"verify_aud": bool(_oidc_cfg.get('audience', None)), "verify_exp": True}
-        payload = jwt.decode(
+        resp = await _http_client.post(url, data=data)
+        resp.raise_for_status()
+        result = resp.json()
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Introspection request failed"
+        )
+
+    if not result.get("active"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive token"
+        )
+
+    return result
+
+
+# -----------------------------
+# LOCAL JWT (HS256)
+# -----------------------------
+async def _validate_hs256(token: str, cfg: dict) -> dict:
+    try:
+        resp =  jwt.decode(
             token,
-            public_key,
-            algorithms=[alg],
-            audience=_oidc_cfg.get('audience', None) or None,
-            options=options,
+            cfg["key"],
+            algorithms=[cfg.get('algorithm', 'HS256')],
+            # audience=cfg.get("audience"),
+            # issuer=cfg.get("issuer"),
         )
-    except JWTError:
+        return resp
+    except Exception as e:
+        print("JWT ERROR:", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired OIDC token",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid local token"
         )
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Empty token payload")
-    return payload
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-) -> dict:
-    token: str = credentials.credentials
-    """Validate a Bearer JWT and return its claims.
+# -----------------------------
+# OIDC JWKS VALIDATION
+# -----------------------------
+async def _validate_jwks(token: str, cfg: dict) -> dict:
+    jwk_uri = cfg.get("jwks_uri")
+    algorithm = cfg.get("algorithm")
+    audience = cfg.get("audience")
+    issuer = cfg.get("issuer")
 
-    Routes to local HS256 validation or OIDC JWKS validation based on the
-    token's `alg` header field.
-    """
+    if not jwk_uri or not algorithm:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="OIDC not configured"
+        )
+
+    jwks = await _fetch_jwks(jwk_uri)
+
+    header = jwt.get_unverified_header(token)
+    kid = header.get("kid")
+
+    if not kid:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing kid"
+        )
+
+    key = next((k for k in jwks["keys"] if k.get("kid") == kid), None)
+
+    if not key:
+        raise HTTPException(
+            status_code=401,
+            detail="Signing key not found"
+        )
 
     try:
-        header = jwt.get_unverified_header(token)
-    except JWTError:
+        return jwt.decode(
+            token,
+            key,
+            algorithms=[algorithm],
+            audience=audience,
+            issuer=issuer,
+        )
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not parse token header",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid token"
         )
 
-    alg: str = header.get("alg", "")
-    kid: str | None = header.get("kid")
 
-    if alg in _LOCAL_ALGORITHMS:
-        return await _validate_local(token)
+# -----------------------------
+# CORE AUTH ROUTER (SAFE)
+# -----------------------------
+async def _validate_with_provider(token: str, cfg: dict) -> dict:
+    if cfg.get("jwks_uri"):
+        return await _validate_jwks(token, cfg)
 
-    if alg in _OIDC_ALGORITHMS:
-        return await _validate_oidc(token, alg, kid)
+    if cfg.get("introspect_api"):
+        return await _validate_introspection(token, cfg)
+
+    if cfg.get("key"):
+        return await _validate_hs256(token, cfg)
+
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid auth provider configuration"
+    )
+
+
+# -----------------------------
+# MAIN DEPENDENCY
+# -----------------------------
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+) -> dict:
+    if isinstance(token, HTTPAuthorizationCredentials):
+        token = token.credentials
+
+    for cfg in _auth_cfgs:
+        try:
+            return await _validate_with_provider(token, cfg)
+        except HTTPException:
+            continue
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=f"Unsupported token algorithm: {alg}",
-        headers={"WWW-Authenticate": "Bearer"},
+        detail="Authentication failed"
     )

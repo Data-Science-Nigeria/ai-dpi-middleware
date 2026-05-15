@@ -1,12 +1,11 @@
-
 from pathlib import Path
-
+from loguru import logger
 from app.utils.load_yaml import get_yaml
 
 
 _CONFIG_PATH = Path(__file__).parent / "default_config.yaml"
 
-print("Loading configuration from:", _CONFIG_PATH)
+logger.info(f"Loading configuration from: {_CONFIG_PATH}")
 
 settings = None
 
