@@ -6,26 +6,33 @@ import aiohttp
 
 from app.config import get_config
 
-
-async def get_embedding(
-    text: str,
-    model: str,
-):
+async def get_embedding(text: str, model: str | None = None):
     cfg = get_config()["llm"]["embedding_model"]
+    print(cfg)
 
-    resolved_url = "https://api.openai.com/v1/embeddings"
+    url = cfg.get("base_url", "https://api.openai.com/v1/embeddings")
+
     payload = {
         "input": text,
-        "model": model
+        "model": model or cfg.get("model", "text-embedding-3-small"),
     }
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=30)
+
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(
-            resolved_url, headers=_headers(cfg["api_key"]), json=payload
+            url,
+            headers=_headers(cfg["API_KEY"]),
+            json=payload,
         ) as response:
-            response.raise_for_status()
+
+            if response.status >= 400:
+                print("Embedding error:", await response.text())
+                response.raise_for_status()
+
             data = await response.json()
-            return data['data'][0]['embedding']
+
+            return data["data"][0]["embedding"]
             
 def _headers(api_key: str) -> dict:
     return {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
