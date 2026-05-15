@@ -1,4 +1,6 @@
+from app.services.stt.providers import deepgram as deepgram_provider
 from app.services.stt.providers import groq as groq_provider
+from app.services.stt.providers import intron as intron_provider
 from app.services.stt.providers import openai as openai_provider
 from app.services.stt.providers import spitch as spitch_provider
 
@@ -30,4 +32,15 @@ async def transcribe(
             model=model, language=language or "en",
             special_words=special_words, timestamp=timestamp,
         )
-    raise ValueError(f"Unsupported provider: {provider!r}")
+    if provider == "deepgram":
+        return await deepgram_provider.transcribe(
+            file_bytes=file_bytes, filename=filename, content_type=content_type,
+            model=model, language=language, prompt=prompt,
+        )
+    if provider == "intron":
+        return await intron_provider.transcribe(
+            file_bytes=file_bytes, filename=filename, content_type=content_type,
+            model=model, language=language or "en",
+            special_words=special_words, timestamp=timestamp,
+        )
+    raise ValueError(f"Unsupported STT provider: {provider!r}")

@@ -10,6 +10,7 @@ from app.core.logging import logger
 
 # Paths that bypass authentication entirely
 PUBLIC_PATHS = {
+    "/",
     "/health",
     "/healthz",
     "/metrics",

@@ -1,18 +1,22 @@
-# AI DPI Middleware
+# AI-DPI Middleware
 
-An async FastAPI middleware layer for **Digital Public Infrastructure (DPI)** that exposes AI capabilities through a secure, role-based API. Supports local JWT authentication, OIDC/OAuth2 via any standards-compliant provider (Keycloak, Google, Auth0), and Redis-backed state management.
+> **Developed and maintained by [Data Science Nigeria](https://datasciencenigeria.org)**
+
+An open, model-agnostic AI middleware layer for **Digital Public Infrastructure (DPI)**. Delivers LLM chat, speech-to-text, text-to-speech, and RAG/vector capabilities through a single secure FastAPI gateway — with plug-and-play provider switching and no vendor lock-in.
 
 ---
 
 ## Features
 
-- **Async FastAPI** with versioned routes (`/api/v1/...`)
-- **Dual auth strategies** — local HS256 JWT or external OIDC RS256/ES256 tokens
-- **OAuth2 flows** — Authorization Code (browser login) and Client Credentials (M2M)
-- **Role-based access control (RBAC)** on all protected routes
-- **Anthropic AI** integration with streaming support
-- **Redis** for OAuth2 state management (CSRF protection)
-- **Docker + Docker Compose** ready
+| Capability | Providers |
+|------------|-----------|
+| **LLM Chat** | Anthropic (Claude), OpenAI (GPT-4o), Groq (Llama 3.3), Generic OpenAI-compatible |
+| **Speech-to-Text** | Groq Whisper, OpenAI Whisper, Deepgram Nova-3, Spitch, Intron Sahara |
+| **Text-to-Speech** | Groq PlayAI/Orpheus, OpenAI, ElevenLabs (32 languages), Spitch, Intron Sahara |
+| **RAG / Vector DB** | Weaviate (open-source), Pinecone (managed), Qdrant (open-source + cloud) |
+| **Auth** | Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), Token Introspection |
+| **Caching & Rate Limiting** | Redis — per-role limits on every endpoint |
+| **Audit** | Structured JSON audit log with trace IDs on all requests |
 
 ---
 
@@ -20,206 +24,289 @@ An async FastAPI middleware layer for **Digital Public Infrastructure (DPI)** th
 
 ```
 app/
-├── main.py                   # App wiring
-├── config.py                 # All settings via .env (pydantic-settings)
-├── handlers/
-│   ├── lifespan.py           # Startup / shutdown (AI + Redis warmup)
-│   └── exception.py          # Global HTTP, validation, and 500 handlers
+├── main.py                        # App wiring and lifespan
+├── config.py                      # YAML config loader
+├── default_config.yaml            # All configuration lives here
 ├── auth/
-│   ├── oauth.py              # JWT validation (HS256 local / RS256 OIDC)
-│   └── rbac.py               # require_roles() FastAPI dependency
+│   ├── oauth.py                   # JWT validation (local HS256 + OIDC RS256/ES256)
+│   └── rbac.py                    # require_roles() FastAPI dependency
+├── middleware/
+│   ├── auth.py                    # Auth middleware with public path bypass
+│   ├── audit.py                   # Structured audit logging
+│   ├── logger.py                  # Request/response timing logger
+│   └── rate_limit.py              # Redis-backed per-role rate limiting
+├── providers/
+│   ├── deepgram.py                # Deepgram client factory
+│   ├── elevenlabs.py              # ElevenLabs client factory
+│   └── intron.py                  # Intron API config (no SDK)
 ├── routers/
-│   ├── health.py             # GET /  and  GET /health
-│   ├── base.py               # Mounts health + v1
+│   ├── health.py                  # GET / (docs page) + GET /health
 │   └── v1/
-│       ├── auth_route.py     # POST /api/v1/auth/token
-│       ├── oauth2_route.py   # OAuth2 Authorization Code + Client Credentials
-│       └── ai_route.py       # POST /api/v1/ai/chat  +  /chat/stream
+│       ├── auth_route.py          # POST /api/v1/auth/token, GET /api/v1/auth/me
+│       ├── chat_route.py          # POST /api/v1/ai, /ai/stream, /ai/add_vector_db
+│       ├── stt_route.py           # POST /api/v1/stt/transcribe
+│       └── tts_route.py           # POST /api/v1/tts/synthesize
 ├── schemas/
-│   ├── auth.py               # TokenRequest, TokenResponse
-│   ├── ai.py                 # Message, ChatRequest, ChatResponse
-│   └── oauth.py              # OAuth2 request/response models
+│   ├── auth.py                    # TokenRequest, TokenResponse
+│   ├── ai.py                      # ChatRequest, ChatResponse, EmbeddingRequest
+│   └── tts.py                     # TTSRequest with full provider/model/voice validation
 ├── services/
-│   ├── ai.py                 # Async Anthropic client
-│   └── redis.py              # Async Redis client
-└── middleware/
-    ├── base.py               # Middleware registration
-    └── logger.py             # Request/response logging with timing
+│   ├── chat/                      # LLM routing + provider implementations
+│   ├── stt/
+│   │   ├── models/                # Per-provider model registries
+│   │   └── providers/             # groq, openai, spitch, deepgram, intron
+│   ├── tts/
+│   │   ├── models/                # Per-provider model/voice/format registries
+│   │   └── providers/             # groq, openai, spitch, elevenlabs, intron
+│   ├── vectordb/
+│   │   └── providers/             # weaviate, pinecone, qdrant
+│   ├── embedding/                 # OpenAI text embeddings
+│   └── redis.py                   # Async Redis client
+└── handlers/
+    ├── lifespan.py                # Startup / shutdown hooks
+    └── exception.py               # Global HTTP + validation error handlers
 ```
 
 ---
 
-## Quick Start
+## Setup
 
-### 1. Clone and install
+### Prerequisites
+
+- Docker + Docker Compose v2 **or** Python 3.11+ with [uv](https://docs.astral.sh/uv/)
+- API keys for the AI providers you intend to use
+
+### 1. Clone
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/datasciencenigeria/ai-dpi-middleware.git
 cd ai-dpi-middleware
-uv sync
 ```
 
-### 2. Configure environment
+### 2. Configure
 
-```bash
-cp .env.example .env
+Edit `app/default_config.yaml`. Replace every `[PLACEHOLDER]` with real values.
+
+**Minimum required — auth block:**
+
+```yaml
+auth:
+  issuers:
+    - issuer: "my-service"
+      type: "local"
+      key: "your-32-byte-hex-secret"   # openssl rand -hex 32
+      algorithm: HS256
+      expire_minutes: 60
+      my-client:
+        secret: "change-me"
+        roles: ["user"]
+      admin-client:
+        secret: "change-me-admin"
+        roles: ["admin", "user"]
 ```
 
-Minimum required fields:
+**LLM providers (add keys for providers you use):**
 
-```bash
-CLIENTS={"myapp":{"secret":"change-me","roles":["user"]}}
-JWT_SECRET=<openssl rand -hex 32>
-ANTHROPIC_API_KEY=sk-ant-...
+```yaml
+llm:
+  providers:
+    anthropic:
+      api_key: "sk-ant-..."
+      default_model: "claude-sonnet-4-6"
+    openai:
+      api_key: "sk-..."
+      default_model: "gpt-4o"
+    groq:
+      api_key: "gsk_..."
+      default_model: "llama-3.3-70b-versatile"
+```
+
+**Speech providers:**
+
+```yaml
+speech:
+  providers:
+    groq:      { api_key: "gsk_..." }
+    openai:    { api_key: "sk-..." }
+    deepgram:  { api_key: "..." }
+    elevenlabs:{ api_key: "..." }
+    spitch:    { api_key: "..." }
+    intron:
+      api_key: "..."
+      base_url: "https://api.intron.africa/v1"
+```
+
+**Vector database (choose one):**
+
+```yaml
+# Weaviate (open-source, runs in Docker)
+llm:
+  vector_database:
+    provider: "weaviate"
+    type: "http"
+    http_host: "weaviate"   # Docker service name
+    http_port: 8080
+    grpc_port: 50051
+    collection_name: "default_collection"
+
+# Pinecone (managed — no Docker needed)
+llm:
+  vector_database:
+    provider: "pinecone"
+    API_KEY: "[PINECONE_API_KEY]"
+    collection_name: "my-index"   # pre-created; dim=1536 for text-embedding-3-small
+
+# Qdrant (open-source + managed cloud)
+llm:
+  vector_database:
+    provider: "qdrant"
+    type: "http"
+    http_host: "qdrant"
+    http_port: 6333
+    collection_name: "default_collection"
 ```
 
 ### 3. Run with Docker Compose (recommended)
 
 ```bash
-docker compose up --build
+# Start app + Redis
+docker compose up -d
+
+# View logs
+docker compose logs -f api
+
+# Rebuild after changes
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
-### 4. Run locally
+**If using Weaviate or Qdrant locally**, add the service to `docker-compose.yml`:
+
+```yaml
+# Weaviate
+weaviate:
+  image: semitechnologies/weaviate:latest
+  ports: ["8080:8080", "50051:50051"]
+  environment:
+    AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+    DEFAULT_VECTORIZER_MODULE: "none"
+
+# Qdrant
+qdrant:
+  image: qdrant/qdrant:latest
+  ports: ["6333:6333"]
+```
+
+### 4. Run locally (development)
 
 ```bash
-# Redis must be running
-uv run uvicorn app.main:app --reload
+uv sync
+.venv/bin/uvicorn app.main:app --reload --port 8000
 ```
 
-API docs available at `http://localhost:8000/docs`
+### 5. Verify
+
+```bash
+curl http://localhost:8000/health
+# {"status":"ok","version":"0.1.0"}
+
+# Get a token
+curl -X POST http://localhost:8000/api/v1/auth/token \
+  -d "username=my-client&password=change-me"
+```
+
+Browse the interactive docs at `http://localhost:8000/docs`.
 
 ---
 
 ## API Reference
 
-### Public
+### Public endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Service description and endpoint map |
-| `GET` | `/health` | Health check |
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Documentation landing page |
+| `GET` | `/health` | JSON health check |
+| `POST` | `/api/v1/auth/token` | Exchange `client_id` + `client_secret` for JWT |
 
-### Auth — `/api/v1/auth`
+### Protected endpoints (Bearer token required)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/auth/token` | Exchange `client_id` + `client_secret` for a local JWT |
-
-### OAuth2 — `/api/v1/auth/oauth2`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/auth/oauth2/login` | Redirect to external provider (Authorization Code flow) |
-| `GET` | `/api/v1/auth/oauth2/callback` | Receive code, exchange for provider tokens |
-| `POST` | `/api/v1/auth/oauth2/token` | Client credentials via external provider (M2M) |
-
-### AI — `/api/v1/ai` *(Bearer token required)*
-
-| Method | Endpoint | Role required | Description |
-|--------|----------|---------------|-------------|
-| `POST` | `/api/v1/ai/chat` | `user` or `admin` | Send messages, get AI response |
-| `POST` | `/api/v1/ai/chat/stream` | `admin` | Streaming AI response |
+| Method | Path | Role | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/auth/me` | any | Verify token, return identity |
+| `POST` | `/api/v1/ai` | `user` | LLM chat with optional RAG context |
+| `POST` | `/api/v1/ai/stream` | `admin` | Streaming LLM response (SSE) |
+| `POST` | `/api/v1/ai/add_vector_db` | `admin` | Store text embedding in vector DB |
+| `POST` | `/api/v1/stt/transcribe` | `user` | Speech → text |
+| `POST` | `/api/v1/tts/synthesize` | `user` | Text → speech |
 
 ---
 
 ## Authentication
 
-### Local JWT (client credentials)
+### Local JWT
 
 ```bash
-# 1. Get a token
+# Get token
 curl -X POST http://localhost:8000/api/v1/auth/token \
+  -d "username=my-client&password=my-secret"
+
+# Use token
+curl http://localhost:8000/api/v1/ai \
+  -H "Authorization: Bearer eyJ..." \
   -H "Content-Type: application/json" \
-  -d '{"client_id": "myapp", "client_secret": "change-me"}'
-
-# 2. Use the token
-curl -X POST http://localhost:8000/api/v1/ai/chat \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Hello"}]}'
+  -d '{"messages":[{"role":"user","content":"Hello"}],"provider":"anthropic"}'
 ```
 
-### OIDC (external provider token)
+### OIDC (Keycloak, Auth0, Google)
 
-Tokens issued by any OIDC provider (Keycloak, Google, Auth0) are accepted directly — no local token exchange needed. Set `OIDC_JWKS_URI` in `.env` and pass the provider's `id_token` as the Bearer token.
+Tokens from any OIDC provider are accepted directly — no local exchange needed. Configure an `online` issuer in `default_config.yaml`:
+
+```yaml
+auth:
+  issuers:
+    - issuer: "https://your-idp.example.com"
+      type: "online"
+      jwks_uri: "https://your-idp.example.com/.well-known/jwks.json"
+      audience: "your-api-audience"
+      algorithm: "RS256"
+```
+
+Roles are read from: `roles` claim, `realm_access.roles` (Keycloak), or `resource_access.<client>.roles`.
 
 ---
 
-## OIDC Provider Setup
+## RBAC
 
-### Keycloak
-
-```bash
-OIDC_ISSUER=https://{host}/realms/{realm}
-OIDC_JWKS_URI=https://{host}/realms/{realm}/protocol/openid-connect/certs
-OIDC_AUDIENCE=account
-
-OAUTH2_CLIENT_ID=ai-dpi-middleware
-OAUTH2_CLIENT_SECRET=<from Keycloak client credentials tab>
-OAUTH2_AUTHORIZATION_ENDPOINT=https://{host}/realms/{realm}/protocol/openid-connect/auth
-OAUTH2_TOKEN_ENDPOINT=https://{host}/realms/{realm}/protocol/openid-connect/token
-OAUTH2_REDIRECT_URI=http://localhost:8000/api/v1/auth/oauth2/callback
-OAUTH2_SCOPES=["openid","profile","email","roles"]
-```
-
-### Google
-
-```bash
-OIDC_JWKS_URI=https://www.googleapis.com/oauth2/v3/certs
-OIDC_AUDIENCE=<your-google-client-id>
-
-OAUTH2_CLIENT_ID=<your-google-client-id>
-OAUTH2_CLIENT_SECRET=<your-google-client-secret>
-OAUTH2_AUTHORIZATION_ENDPOINT=https://accounts.google.com/o/oauth2/v2/auth
-OAUTH2_TOKEN_ENDPOINT=https://oauth2.googleapis.com/token
-OAUTH2_REDIRECT_URI=http://localhost:8000/api/v1/auth/oauth2/callback
-OAUTH2_SCOPES=["openid","profile","email"]
-```
+| Role | Endpoints |
+|------|-----------|
+| `user` | `/ai`, `/stt/transcribe`, `/tts/synthesize`, `/auth/me` |
+| `admin` | All `user` endpoints + `/ai/stream`, `/ai/add_vector_db` |
 
 ---
 
-## RBAC — Roles
+## Provider Matrix
 
-| Role | Access |
-|------|--------|
-| `user` | `POST /ai/chat` |
-| `admin` | `POST /ai/chat` + `POST /ai/chat/stream` |
+Alphabetical. Only providers integrated into this middleware are listed.
 
-Roles are embedded in the JWT at token issuance. Configure them per client in `CLIENTS`:
-
-```bash
-CLIENTS={"myapp":{"secret":"s3cr3t","roles":["user"]},"admin-app":{"secret":"s3cr3t","roles":["admin","user"]}}
-```
-
-For OIDC tokens, roles are read from:
-- `roles` claim (local / standard)
-- `realm_access.roles` (Keycloak realm roles)
-- `resource_access.<client>.roles` (Keycloak client roles)
-
----
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `CLIENTS` | Yes | `{}` | JSON client registry |
-| `JWT_SECRET` | Yes | — | HS256 signing secret |
-| `JWT_EXPIRE_MINUTES` | No | `60` | Token lifetime |
-| `ANTHROPIC_API_KEY` | Yes | — | Anthropic API key |
-| `ANTHROPIC_MODEL` | No | `claude-sonnet-4-6` | Model to use |
-| `REDIS_URL` | No | `redis://localhost:6379/0` | Redis connection |
-| `OIDC_JWKS_URI` | No | — | Enables OIDC token validation |
-| `OIDC_AUDIENCE` | No | — | Expected `aud` claim |
-| `OAUTH2_*` | No | — | Enables OAuth2 flows |
-| `CORS_ORIGINS` | No | `["*"]` | Allowed CORS origins |
+| Provider | LLM / Chat | STT | TTS | Language Coverage |
+|----------|------------|-----|-----|-------------------|
+| `anthropic` | ✓ Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 | — | — | 100+ languages |
+| `deepgram` | — | ✓ Nova-3 (6.84% WER), Nova-2, Enhanced, Base — auto-detect, diarization, keyterm prompting | — | 30+ incl. code-switching (EN, ES, FR, DE, HI, RU, PT, JA, IT, NL) |
+| `elevenlabs` | — | — | ✓ eleven_multilingual_v2 (emotionally-aware), eleven_flash_v2_5 (<75ms), eleven_turbo_v2_5, eleven_v3, eleven_monolingual_v1 | 32 languages |
+| `groq` | ✓ Llama 4 Scout 17B, Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B, Gemma2 9B | ✓ whisper-large-v3-turbo, whisper-large-v3, distil-whisper-large-v3-en | ✓ orpheus-v1-english (vocal direction), orpheus-arabic-saudi, playai-tts, playai-tts-arabic | Multilingual |
+| `intron` | — | ✓ Sahara v1 — 23 African languages, 500+ accents | ✓ Sahara TTS v1 | sw, ha, yo, ig, am, so, zu, xh, af, wo, ff, en + more |
+| `openai` | ✓ GPT-4o, GPT-4o mini, o1, o3-mini | ✓ gpt-4o-transcribe, gpt-4o-mini-transcribe, whisper-1 | ✓ gpt-4o-mini-tts (steerable), tts-1, tts-1-hd | 50+ languages |
+| `spitch` | — | ✓ Mansa v1 — African-accent optimised, streaming, diarization | ✓ Legacy (African tonal voices) | yo, ha, ig, sw, am + more; EN; bidirectional translation |
 
 ---
 
 ## Development
 
 ```bash
-# Install with dev dependencies
-uv sync --group dev
+# Install with dev extras
+uv sync
 
 # Run tests
 uv run pytest
@@ -227,3 +314,13 @@ uv run pytest
 # Lint
 uv run ruff check .
 ```
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+*Developed and maintained by [Data Science Nigeria](https://datasciencenigeria.org)*

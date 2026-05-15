@@ -18,18 +18,18 @@ _cfg = get_config()
 _rl = _cfg.get('tts', {}).get('rate_limit', {})
 
 _MEDIA_TYPES = {
-    "wav": "audio/wav",
-    "mp3": "audio/mpeg",
-    "flac": "audio/flac",
-    "aac": "audio/aac",
-    "opus": "audio/ogg",
-    "pcm": "audio/pcm",
-    # Spitch formats
-    "ogg_opus": "audio/ogg",
+    "wav":       "audio/wav",
+    "mp3":       "audio/mpeg",
+    "flac":      "audio/flac",
+    "aac":       "audio/aac",
+    "opus":      "audio/ogg",
+    "pcm":       "audio/pcm",
+    "ogg_opus":  "audio/ogg",
     "webm_opus": "audio/webm",
     "pcm_s16le": "audio/pcm",
-    "mulaw": "audio/basic",
-    "alaw": "audio/alaw",
+    "mulaw":     "audio/basic",
+    "ulaw":      "audio/basic",
+    "alaw":      "audio/alaw",
 }
 
 _CACHE_PREFIX = "tts:cache:"
@@ -50,38 +50,33 @@ def _cache_key(body: TTSRequest) -> str:
     "/synthesize",
     summary="Synthesize speech from text",
     description="""
-Convert text to speech using the specified provider, model, and voice.
+Convert text to speech. Five providers, true global multilingual coverage.
 
 **Providers & models**
 
-| Provider | Model | Language | Vocal directions |
-|----------|-------|----------|-----------------|
-| `groq` | `playai-tts` | English | No |
-| `groq` | `playai-tts-arabic` | Arabic | No |
-| `groq` | `canopylabs/orpheus-v1-english` | English | Yes |
-| `groq` | `canopylabs/orpheus-arabic-saudi` | Arabic (Saudi) | No |
+| Provider | Model | Languages | Notes |
+|----------|-------|-----------|-------|
+| `groq` | `playai-tts` | English | — |
+| `groq` | `playai-tts-arabic` | Arabic | — |
+| `groq` | `canopylabs/orpheus-v1-english` | English | Vocal direction tags |
+| `groq` | `canopylabs/orpheus-arabic-saudi` | Arabic (Saudi) | — |
+| `openai` | `tts-1` | Multilingual | Fast |
+| `openai` | `tts-1-hd` | Multilingual | High quality |
+| `openai` | `gpt-4o-mini-tts` | Multilingual | Supports `instructions` |
+| `elevenlabs` | `eleven_multilingual_v2` | 32 languages | Best quality *(default)* |
+| `elevenlabs` | `eleven_flash_v2_5` | 32 languages | Ultra-low latency |
+| `elevenlabs` | `eleven_turbo_v2_5` | 32 languages | Low latency |
+| `elevenlabs` | `eleven_monolingual_v1` | English only | Legacy |
+| `spitch` | `legacy` | en, ha, ig, yo | West African |
+| `intron` | `sahara-tts-v1` | sw, ha, yo, ig, am, en | Sahara African |
 
-**Orpheus limits**
-- Input is capped at **200 characters** for all `canopylabs/*` models.
-- The English model (`canopylabs/orpheus-v1-english`) supports inline **vocal-direction tags**
-  embedded directly in the text, e.g.:
-  `"Good morning! [cheerful] Welcome to the service."`
-  Available tags: `[cheerful]`, `[sad]`, `[angry]`, `[fearful]`, `[disgusted]`, `[surprised]`,
-  `[friendly]`, `[casual]`, `[authoritatively]`, `[formally]`, `[whisper]`, `[gravelly whisper]`,
-  `[rapid babbling]`, `[laughing]`, `[giggling]`, `[sighing]`, `[crying]`, `[screaming]`.
+**ElevenLabs languages** (32): en, ja, zh, de, hi, fr, ko, pt, it, es, id, nl, tr, fil, pl, sv, bg, ro, ar, cs, el, fi, hr, ms, sk, da, ta, uk, ru, hu, no, vi
 
-**Voices**
-
-| Model | Voices |
-|-------|--------|
-| `playai-tts` / `playai-tts-arabic` | Aaliyah, Adelaide, Angelo, Arsenio, Barbra, Briggs, Calum, Celeste, Chandra, Chip, Cillian, Deedee, Dexter, Edmund, Evangeline, Felicity, Gideon, Hank, Hera, Jedidiah, Kendrick, Kitty, Quinn, Tara, Thunder |
-| `canopylabs/orpheus-v1-english` | Autumn, Diana, Hannah *(f)* · Austin, Daniel, Troy *(m)* |
-| `canopylabs/orpheus-arabic-saudi` | Lulwa, Noura *(f)* · Fahad, Sultan *(m)* |
-
-Omit `voice` to use the model's default.
+**Orpheus vocal-direction tags** (canopylabs/orpheus-v1-english only):
+`[cheerful]` `[sad]` `[angry]` `[whisper]` `[laughing]` `[formal]` and more. Input capped at 200 chars.
 
 **Response**
-Raw audio bytes with the appropriate `Content-Type` header (`audio/wav` by default).
+Raw audio bytes with the appropriate `Content-Type` header.
 """,
     response_class=Response,
     responses={

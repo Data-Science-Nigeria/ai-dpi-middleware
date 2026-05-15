@@ -11,3 +11,7 @@ logs/
 *.log
 
 data/
+
+.codacy/
+.github/
+proposal.docx

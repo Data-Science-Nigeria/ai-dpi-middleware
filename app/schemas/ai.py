@@ -14,7 +14,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message]
-    provider: Literal["anthropic", "openai", "groq"] = Field(
+    provider: Literal["anthropic", "openai", "groq", "gemini"] = Field(
         "anthropic",
         description="LLM provider to use.",
     )
@@ -23,10 +23,12 @@ class ChatRequest(BaseModel):
         description=(
             "Chat model. Omit to use the provider default. "
             "Anthropic: claude-opus-4-7, claude-sonnet-4-6 (default), claude-haiku-4-5-20251001. "
-            "OpenAI: gpt-4o (default), gpt-4o-mini, o1, o3-mini. "
+            "OpenAI: gpt-5, gpt-5-mini, gpt-4o (default), gpt-4o-mini, o1, o3, o3-mini, o4-mini. "
             "Groq: llama-3.3-70b-versatile (default), llama-3.1-8b-instant, "
             "meta-llama/llama-4-scout-17b-16e-instruct, meta-llama/llama-4-maverick-17b-128e-instruct, "
-            "mixtral-8x7b-32768, gemma2-9b-it."
+            "groq/compound, groq/compound-mini, mixtral-8x7b-32768, gemma2-9b-it, qwen/qwen3-32b. "
+            "Gemini: gemini-2.5-pro, gemini-2.5-flash (default), gemini-2.5-flash-lite, "
+            "gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash."
         ),
     )
     system: str | None = None

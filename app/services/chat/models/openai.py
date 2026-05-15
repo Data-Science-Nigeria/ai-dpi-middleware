@@ -3,14 +3,22 @@
 from typing import Literal
 
 OpenAIChatModel = Literal[
-    "gpt-4o",       # Flagship multimodal model
-    "gpt-4o-mini",  # Fast and affordable
-    "o1",           # Reasoning model
-    "o3-mini",      # Compact reasoning model
+    # GPT-5 family
+    "gpt-5",
+    "gpt-5-mini",
+    # GPT-4o family
+    "gpt-4o",
+    "gpt-4o-mini",
+    # Reasoning models
+    "o1",
+    "o1-mini",
+    "o3",
+    "o3-mini",
+    "o4-mini",
 ]
 
 # Reasoning models do not support system messages or streaming
-OPENAI_REASONING_MODELS: frozenset[str] = frozenset({"o1", "o3-mini"})
+OPENAI_REASONING_MODELS: frozenset[str] = frozenset({"o1", "o1-mini", "o3", "o3-mini", "o4-mini"})
 
 OPENAI_MAX_TOKENS_MAX = 16384
 

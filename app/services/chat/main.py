@@ -2,6 +2,7 @@ import yaml
 
 from app.config import get_config
 from app.services.chat.providers import anthropic as anthropic_provider
+from app.services.chat.providers import gemini as gemini_provider
 from app.services.chat.providers import groq as groq_provider
 from app.services.chat.providers import openai as openai_provider
 
@@ -16,7 +17,6 @@ async def chat(
 ) -> str:
     if system is None:
         cfg = get_config()
-        
         has_system = cfg['llm'].get("system_prompt_path", None)
         if has_system:
             with open(cfg['llm']['system_prompt_path']) as f:
@@ -26,7 +26,7 @@ async def chat(
                     system = None
 
     if system is not None and system.find("{context}"):
-        system = system.format(document = context)
+        system = system.format(document=context)
 
     if provider == "anthropic":
         return await anthropic_provider.chat(
@@ -37,16 +37,14 @@ async def chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
         )
     if provider == "groq":
-        if context is None:
-            return await groq_provider.chat(
-                messages=messages, model=model, system=system, max_tokens=max_tokens,
-                documents=None
-            )
-        else:
-            return await groq_provider.chat(
-                messages=messages, model=model, system=system, max_tokens=max_tokens,
-                documents=[context]
-            )
+        return await groq_provider.chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+            documents=[context] if context else None,
+        )
+    if provider == "gemini":
+        return await gemini_provider.chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
 
     raise ValueError(f"Unsupported provider: {provider!r}")
 
@@ -74,6 +72,11 @@ async def stream_chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
         )
         async for chunk in async_iter:
+            yield chunk
+    elif provider == "gemini":
+        async for chunk in gemini_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        ):
             yield chunk
     else:
         raise ValueError(f"Unsupported provider: {provider!r}")

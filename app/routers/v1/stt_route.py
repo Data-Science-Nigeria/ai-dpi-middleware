@@ -14,6 +14,8 @@ from app.middleware.rate_limit import rate_limit
 from app.schemas.stt import TranscriptionResponse
 from app.services import redis as redis_service
 from app.services.stt.main import transcribe
+from app.services.stt.models.deepgram import DEEPGRAM_LANGUAGES
+from app.services.stt.models.intron import INTRON_STT_LANGUAGES
 from app.services.stt.models.registry import PROVIDER_MODELS
 from app.services.stt.models.spitch import (
     SPITCH_ACCEPTED_EXTENSIONS,
@@ -102,17 +104,23 @@ Convert an audio file to text using the specified provider and model.
 )
 async def transcribe_endpoint(
     file: UploadFile = File(..., description="Audio file to transcribe"),
-    provider: Literal["groq", "openai", "spitch"] = Form("groq"),
+    provider: Literal["groq", "openai", "spitch", "deepgram", "intron"] = Form("groq"),
     model: str | None = Form(None, description="STT model. Defaults to the provider's recommended model."),
-    language: str | None = Form(None, description="Language code. Required for Spitch (en, yo, ha, ig, am). Auto-detected for Groq/OpenAI."),
+    language: str | None = Form(None, description="Language code. Required for Spitch and Intron. Auto-detected for Groq/OpenAI/Deepgram."),
     prompt: str | None = Form(None, description="Context hint to improve accuracy (Groq/OpenAI only)."),
-    special_words: str | None = Form(None, description="Custom vocabulary hint (Spitch only)."),
-    timestamp: Literal["none", "sentence", "word"] = Form("none", description="Timestamp granularity. Spitch mansa_v1 only."),
+    special_words: str | None = Form(None, description="Custom vocabulary hint (Spitch/Intron only)."),
+    timestamp: Literal["none", "sentence", "word"] = Form("none", description="Timestamp granularity. Spitch mansa_v1 and Intron only."),
     _user: dict = Depends(rate_limit(part = "stt", user_limit=_rl['user'], admin_limit=_rl['admin'])),
 ) -> TranscriptionResponse:
 
     # --- Resolve default model per provider ---
-    _defaults = {"groq": "whisper-large-v3-turbo", "openai": "gpt-4o-mini-transcribe", "spitch": "legacy"}
+    _defaults = {
+        "groq": "whisper-large-v3-turbo",
+        "openai": "gpt-4o-mini-transcribe",
+        "spitch": "legacy",
+        "deepgram": "nova-3",
+        "intron": "sahara-v1",
+    }
     resolved_model = model or _defaults[provider]
 
     # --- Validate provider → model ---
@@ -123,7 +131,7 @@ async def transcribe_endpoint(
             detail=f"Provider '{provider}' does not support model '{resolved_model}'. Supported: {sorted(supported)}.",
         )
 
-    # --- Spitch-specific validations ---
+    # --- Provider-specific language validation ---
     if provider == "spitch":
         if not language:
             raise HTTPException(
@@ -141,9 +149,28 @@ async def transcribe_endpoint(
                 detail=f"Timestamps are only supported by: {sorted(SPITCH_TIMESTAMP_MODELS)}.",
             )
 
+    if provider == "intron":
+        if not language:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Intron requires a `language`. Supported: {sorted(INTRON_STT_LANGUAGES)}.",
+            )
+        if language not in INTRON_STT_LANGUAGES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Language '{language}' is not supported by Intron. Supported: {sorted(INTRON_STT_LANGUAGES)}.",
+            )
+
+    if provider == "deepgram" and language and language not in DEEPGRAM_LANGUAGES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Language '{language}' is not supported by Deepgram. Supported: {sorted(DEEPGRAM_LANGUAGES)}.",
+        )
+
     # --- Validate file extension ---
     ext = Path(file.filename or "").suffix.lower()
-    allowed_exts = SPITCH_ACCEPTED_EXTENSIONS if provider == "spitch" else _GENERAL_AUDIO_EXTENSIONS
+    _small_providers = {"spitch", "intron"}
+    allowed_exts = SPITCH_ACCEPTED_EXTENSIONS if provider in _small_providers else _GENERAL_AUDIO_EXTENSIONS
     if ext not in allowed_exts:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -152,8 +179,8 @@ async def transcribe_endpoint(
 
     # --- Validate file size ---
     file_bytes = await file.read()
-    max_bytes = _SPITCH_MAX_FILE_BYTES if provider == "spitch" else _MAX_FILE_BYTES
-    max_mb = _cfg.get('speech', {}).get('max_file_size_mb', 50) if provider == "spitch" else _cfg.get('speech', {}).get('spitch_max_file_size_mb', 25)
+    max_bytes = _SPITCH_MAX_FILE_BYTES if provider in _small_providers else _MAX_FILE_BYTES
+    max_mb = _cfg.get('speech', {}).get('spitch_max_file_size_mb', 25) if provider in _small_providers else _cfg.get('speech', {}).get('max_file_size_mb', 50)
     if len(file_bytes) > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

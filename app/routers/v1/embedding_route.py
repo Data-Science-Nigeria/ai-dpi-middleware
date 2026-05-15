@@ -10,7 +10,7 @@ from app.schemas.ai import EmbeddingRequest, EmbeddingResponse
 from app.services.embedding import main as embedding_service
 from app.services.vectordb import main as vectordb
 
-router = APIRouter(prefix="/ai", tags=["AI"])
+router = APIRouter(prefix="/ai", tags=["RAG"])
 
 _cfg = get_config().get('llm', {})
 
