@@ -28,11 +28,10 @@ router = APIRouter(prefix="/stt", tags=["STT"])
 _cfg = get_config()
 _rl = _cfg.get('stt', {}).get('rate_limit', {})
 
-# Allowed audio extensions for Groq/OpenAI (from YAML security config)
-_GENERAL_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
-    ext for ext in _cfg.get('security', {}).get('upload', {}).get('allowed_extensions', [])
-    if ext in {".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a"}
-)
+# Allowed audio extensions for Groq/OpenAI
+_GENERAL_AUDIO_EXTENSIONS: frozenset[str] = frozenset({
+    ".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a",
+})
 
 _MAX_FILE_BYTES: int = _cfg.get('speech', {}).get('max_file_size_mb', 50) * 1024 * 1024
 _SPITCH_MAX_FILE_BYTES: int = _cfg.get('speech', {}).get('spitch_max_file_size_mb', 25) * 1024 * 1024
@@ -48,7 +47,7 @@ _MIME_TYPES: dict[str, str] = {
 }
 
 _CACHE_PREFIX = "stt:cache:"
-_CACHE_TTL = _cfg.get('chat', {}).get('session_ttl_hours', 24) * 3600
+_CACHE_TTL = _cfg.get('stt', {}).get('session_ttl_hours', 24) * 3600
 
 
 def _cache_key(

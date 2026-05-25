@@ -13,10 +13,18 @@ class Message(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    messages: list[Message]
-    provider: Literal["anthropic", "openai", "groq", "gemini"] = Field(
+    session_id: str | None = Field(
+        None,
+        description=(
+            "Optional session ID for multi-turn conversation history. "
+            "When provided and Redis is enabled, prior turns are prepended automatically. "
+            "Any non-empty string is valid — use a UUID or a user/thread identifier."
+        ),
+    )
+    messages: list[Message] = Field(..., min_length=1)
+    provider: Literal["anthropic", "openai", "groq", "gemini", "ollama"] = Field(
         "anthropic",
-        description="LLM provider to use.",
+        description="LLM provider to use. Use 'ollama' for sovereign/local inference.",
     )
     model: str | None = Field(
         None,
@@ -28,19 +36,21 @@ class ChatRequest(BaseModel):
             "meta-llama/llama-4-scout-17b-16e-instruct, meta-llama/llama-4-maverick-17b-128e-instruct, "
             "groq/compound, groq/compound-mini, mixtral-8x7b-32768, gemma2-9b-it, qwen/qwen3-32b. "
             "Gemini: gemini-2.5-pro, gemini-2.5-flash (default), gemini-2.5-flash-lite, "
-            "gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash."
+            "gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash. "
+            "Ollama: any model you have pulled locally, e.g. llama3.2 (default), mistral, phi3."
         ),
     )
     system: str | None = None
     max_tokens: int = Field(1024, ge=1, le=8096)
 
     @model_validator(mode="after")
-    def resolve_and_validate_model(self) -> ChatRequest:
+    def resolve_and_validate_model(self) -> "ChatRequest":
         if self.model is None:
             self.model = DEFAULT_MODEL.get(self.provider)
 
-        supported = PROVIDER_MODELS.get(self.provider, frozenset())
-        if self.model not in supported:
+        supported = PROVIDER_MODELS.get(self.provider)
+        # None means the provider accepts any model string (e.g. Ollama)
+        if supported is not None and self.model not in supported:
             raise ValueError(
                 f"Provider '{self.provider}' does not support model '{self.model}'. "
                 f"Supported models: {sorted(supported)}."
@@ -52,6 +62,7 @@ class ChatResponse(BaseModel):
     reply: str
     provider: str
     model: str
+    session_id: str | None = None
 
 class EmbeddingResponse(BaseModel):
     status: bool = True
@@ -60,5 +71,5 @@ class EmbeddingResponse(BaseModel):
 
 class EmbeddingRequest(BaseModel):
     text: str
-    model: str
+    model: str | None = Field(None, description="Embedding model. Omit to use the provider default from config.")
     collection_name: str | None = None

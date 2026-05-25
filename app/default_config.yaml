@@ -1,19 +1,20 @@
-app: 
+app:
   port: 5000
   name: "AI DPI Middleware"
   version: "0.1.0"
   debug: false
 
+# ── Authentication ────────────────────────────────────────────────────────────
 auth:
   issuers:
     - issuer: "[KEY_CLOAK_ISSUER]"
       jwks_uri: "[jwks_uri]"
       audience: "account"
-      algorithm: "RS256" 
+      algorithm: "RS256"
       type: "online"
 
     - issuer: "[INTROSPECT_ISSUER]"
-      introspect_api: "api/instrospect"
+      introspect_api: "api/introspect"
       client_id: "[INTRO_ID]"
       client_secret: "[INTRO_SECRET]"
       type: "online"
@@ -26,21 +27,13 @@ auth:
         secret: "[SECRET1]"
         roles: ["user"]
       client2:
-        secret: "[SECRET2]" 
+        secret: "[SECRET2]"
         roles: ["admin"]
-      expire_minutes: 60  
+      expire_minutes: 60
 
+# ── LLM ──────────────────────────────────────────────────────────────────────
 llm:
-  max_context_length: 131072  # Qwen 2.5 supports 32K context
-  max_new_tokens: 8192  # Conservative output token limit
-  temperature: 0.9 
-  top_p: 0.95
-  repetition_penalty: 1.05
-  stop:
-    - "<|im_end|>"
-    - "<|end_of_text|>"
-
-  providers:                              # This should follow the order of the model if no provider is specified.
+  providers:
     anthropic:
       api_key: "[ANTHROPIC_API_KEY]"
       default_model: "claude-sonnet-4-6"
@@ -48,6 +41,7 @@ llm:
       kwargs:
         temperature: 0.9
         top_p: 0.95
+
     openai:
       api_key: "[OPENAI_API_KEY]"
       default_model: "gpt-4o"
@@ -55,6 +49,7 @@ llm:
       kwargs:
         temperature: 0.9
         top_p: 0.95
+
     groq:
       api_key: "[GROQ_API_KEY]"
       default_model: "llama-3.3-70b-versatile"
@@ -62,6 +57,7 @@ llm:
       kwargs:
         temperature: 0.9
         top_p: 0.95
+
     gemini:
       api_key: "[GEMINI_API_KEY]"
       default_model: "gemini-2.5-flash"
@@ -69,6 +65,7 @@ llm:
       kwargs:
         temperature: 0.9
         top_p: 0.95
+
     generic:
       api_key: "[GENERIC_API_KEY]"
       default_model: "llama-3.3-70b-versatile"
@@ -77,47 +74,56 @@ llm:
       kwargs:
         temperature: 0.9
         top_p: 0.95
-  
+
+    # Sovereign / local — no external API calls
+    ollama:
+      base_url: "http://ollama:11434"  # use http://localhost:11434 for bare-metal
+      default_model: "llama3.2"        # any model pulled via `ollama pull <model>`
+      timeout_seconds: 120
+      options:
+        temperature: 0.9
+        top_p: 0.95
+
   vector_database:
-    # Provider options: "weaviate" (open-source), "pinecone" (managed), "qdrant" (open-source + managed cloud)
+    # "weaviate" — self-hosted Docker (sovereign) or Weaviate Cloud
+    # "qdrant"   — self-hosted Docker (sovereign) or Qdrant Cloud
+    # "pinecone" — managed cloud only
     provider: "weaviate"
 
-    # Connection type per provider:
-    #   weaviate:  "http" (local Docker) | "cloud" (Weaviate Cloud) | "embedded"
-    #   qdrant:    "http" (local Docker) | "cloud" (Qdrant Cloud)   | "memory"
-    #   pinecone:  always cloud — only API_KEY is required
+    # weaviate/qdrant: "http" (local Docker) | "cloud" | "embedded"/"memory"
+    # pinecone: always cloud — only API_KEY required
     type: "http"
 
-    # Local / self-hosted (weaviate + qdrant)
-    http_host: "localhost"
-    http_port: 8080          # Weaviate default; Qdrant default is 6333
-    grpc_port: 50051          # Weaviate gRPC port (v4 client requirement)
+    http_host: "weaviate"   # Docker service name; use "localhost" for bare-metal
+    http_port: 8080         # Weaviate default; Qdrant default is 6333
+    grpc_port: 50051        # Weaviate gRPC port (v4 client requirement)
 
-    # Weaviate Cloud / Qdrant Cloud
-    cloud_host: "[CLUSTER_URL]"   # e.g. https://my-cluster.weaviate.network  |  https://xyz.us-east-1-0.aws.cloud.qdrant.io
+    cloud_host: "[CLUSTER_URL]"
     API_KEY: "[API_KEY]"
-
-    # Pinecone (always cloud)
-    # API_KEY above is reused for Pinecone too
 
     N_RESULT: 2
     collection_name: "default_collection"
 
   embedding_model:
-    model: "text-embedding-3-small"
+    # "openai" — requires API key, uses text-embedding-3-small
+    # "local"  — sovereign, sentence-transformers on-device (no API key)
+    #   local model options: "all-MiniLM-L6-v2" (fast, 384-dim)
+    #                        "all-mpnet-base-v2" (accurate, 768-dim)
+    #                        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" (African langs)
     provider: "openai"
+    model: "text-embedding-3-small"
     API_KEY: "[OPENAI_API_KEY]"
 
   rate_limit:
-    user: 10                 # Chat requests per minute for `user` role
-    admin: 60                # Chat requests per minute for `admin` role
+    user: 10    # requests/minute for `user` role
+    admin: 60   # requests/minute for `admin` role
 
-  system_prompt_path: "/path/system_prompt.yaml" # If you don't want to havea system prompt
-  
+  system_prompt_path: null  # path to YAML file containing SYSTEM_PROMPT: "..."
 
+# ── Speech (STT + TTS shared providers) ──────────────────────────────────────
 speech:
-  max_file_size_mb: 50           # General STT file size limit (Groq, OpenAI, Deepgram)
-  spitch_max_file_size_mb: 25    # Spitch and Intron file size limit
+  max_file_size_mb: 50         # Groq, OpenAI, Deepgram
+  spitch_max_file_size_mb: 25  # Spitch and Intron
 
   providers:
     groq:
@@ -134,137 +140,58 @@ speech:
       api_key: "[INTRON_API_KEY]"
       base_url: "https://api.intron.africa/v1"
 
+# ── TTS ───────────────────────────────────────────────────────────────────────
 tts:
-  session_ttl_hours: 24
+  session_ttl_hours: 24  # Redis cache TTL for synthesized audio
   rate_limit:
     user: 10
     admin: 60
 
+# ── STT ───────────────────────────────────────────────────────────────────────
 stt:
-  session_ttl_hours: 24
+  session_ttl_hours: 24  # Redis cache TTL for transcription results
   rate_limit:
     user: 10
     admin: 60
 
+# ── Redis ─────────────────────────────────────────────────────────────────────
 redis:
   enabled: false
-  url: "[REDIS_URL]"  # Load from environment variable REDIS_URL, e.g. "redis://localhost:6379/0"
+  url: "[REDIS_URL]"  # e.g. "redis://localhost:6379/0"
   session_prefix: "session:"
   rate_limit_prefix: "rate_limit:"
 
+# ── Chat / session history ────────────────────────────────────────────────────
+chat:
+  history_limit: 20       # max messages per session (oldest dropped first)
+  session_ttl_hours: 24   # idle session lifetime in Redis (0 = no expiry)
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
 cors:
-  allow_origins: ["*"]  # In production, specify allowed origins
+  allow_origins: ["*"]   # restrict in production
   allow_methods: ["*"]
   allow_headers: ["*"]
   allow_credentials: true
 
-
-
-# # chroma_db:
-# #   path: "./chroma_db"
-# #   pdf_collection: "pdf_paragraphs"
-
-# # embedding:
-# #   model_path: "./model-s/African-Cross-Lingua-Embeddings-Model"
-# #   cross_encoder_path: "./model-s/ms-marco-MiniLM-L-6-v2"
-
+# ── Document ingestion + RAG ──────────────────────────────────────────────────
 document:
   pdf_folder: "./data/documents"
-  min_paragraph_length: 50
-  chunk_overlap_sentences: 3  # Number of sentences from previous chunk to include in next chunk
   image_folder: "./data/images"
   audio_folder: "./data/audio"
-  enable_pdf_ocr: true     # Enable OCR for images inside PDFs
-  extract_tables: false    # Placeholder for future table extraction
+  max_file_size_mb: 50
 
-# speech:
-#   whisper_model_path: "./model-s/whisper-small"
-#   sampling_rate: 16000
-#   confidence_threshold: 0.6
-#   use_segmentation: true
-#   language: "en"
-#   device: "auto" # "auto" for auto-detect, "cuda" for GPU, "cpu" for CPU
-#   max_file_size_mb: 50
+  chunk_size: 512              # target characters per chunk
+  chunk_overlap_sentences: 3   # sentences carried from previous chunk
+  min_paragraph_length: 50     # shorter sentences discarded as noise
 
-# rag:
-#   minimum_relevance_threshold: 0.5  # Minimum cross-encoder score for document relevance (0-1 scale)
-#   top_k: 10  # Number of candidates to retrieve before reranking
-#   rerank_k: 3  # Number of documents to return after reranking
-#   retrieval_presets:
-#     simple:  # For simple factual queries
-#       top_k: 5
-#       rerank_k: 2
-#     standard:  # Default balanced retrieval
-#       top_k: 10
-#       rerank_k: 3
-#     deep:  # For complex analytical queries
-#       top_k: 20
-#       rerank_k: 5
+  ocr:
+    # "tesseract" — fully local, requires Tesseract binary on the host
+    # "llm"       — Claude or GPT-4o vision; higher quality, requires API key
+    default_backend: "tesseract"
+    tesseract_cmd: null         # override Tesseract binary path if not on PATH
+    llm_provider: "anthropic"   # used when backend = "llm"
 
-# chat:
-#   history_limit: 10
-#   session_ttl_hours: 24
-
-# smart_chat:
-#   confidence_threshold: 0.7
-
-# security:
-#   enable_content_sanitization: true  # Sanitize retrieved content to prevent prompt injection
-#   strict_sanitization_mode: false  # If true, removes suspicious content; if false, logs warnings only
-#   # Rate Limiting (requests per minute)
-#   rate_limits:
-#     storage_uri: "memory://"         # Storage backend: "memory://" for in-memory, "redis://localhost:6379" for Redis (in production)
-#     global_default: 100          # Default limit for all endpoints
-#     upload_single: 10            # Single file upload limit
-#     upload_multi: 5              # Multi-file upload limit
-#     query_direct: 30             # Direct query limit
-#     query_rag: 30                # RAG query limit
-#     session_operations: 60       # Session CRUD operations limit
-#     stt_user: 10                 # STT requests per minute for `user` role
-#     stt_admin: 60                # STT requests per minute for `admin` role
-  
-#   # File Upload Limits
-#   upload:
-#     max_file_size_mb: 50         # Maximum file size in megabytes
-#     allowed_extensions:          # Whitelist of allowed file extensions
-#       - .pdf
-#       - .docx
-#       - .doc
-#       - .txt
-#       - .rtf
-#       - .odt
-#       - .pptx
-#       - .ppt
-#       - .png
-#       - .jpg
-#       - .jpeg
-#       - .bmp
-#       - .tiff
-#       - .gif
-#       - .mp3
-#       - .wav
-#       - .flac
-#       - .aac
-#       - .ogg
-#       - .wma
-#       - .m4a
-  
-#   # Allowed departments (whitelist)
-#   allowed_departments:
-#     - mosti
-#     - health
-#     - education
-#     - finance
-#     - "test"
-
+# ── Logging ───────────────────────────────────────────────────────────────────
 logging:
   level: "INFO"
   file: "log/app.log"
-
-# image:
-#   min_paragraph_length: 50
-#   lang: "eng"
-#   tesseract_path: null
-#   enable_preprocessing: true
-#   enable_quality_validation: true
-#   quality_threshold: 0.2  # Fraction of "garbage" characters allowed

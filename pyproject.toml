@@ -26,6 +26,20 @@ dependencies = [
     "spitch>=1.47.0",
     "uvicorn[standard]>=0.42.0",
     "weaviate-client>=4.9.0",
+    # ── RAG / OCR pipeline ────────────────────────────────────────────────────
+    "pymupdf>=1.24.0",           # PDF text extraction + page-to-image rendering
+    "Pillow>=10.0.0",            # Image handling (required by pytesseract)
+    "pytesseract>=0.3.13",       # Tesseract OCR wrapper (Tesseract binary must be installed separately)
+    # ── Office / knowledge format extractors ─────────────────────────────────
+    "python-docx>=1.1.0",        # DOCX / DOC extraction
+    "python-pptx>=1.0.0",        # PPTX / PPT extraction (includes speaker notes)
+    "openpyxl>=3.1.0",           # XLSX / XLS extraction
+    "striprtf>=0.0.26",          # RTF extraction
+    "odfpy>=1.4.1",              # ODT (OpenDocument Text) extraction
+    # ── Schema-constrained extraction ────────────────────────────────────────
+    "jsonschema>=4.23.0",            # JSON Schema validation for extraction output
+    # ── Sovereign / local embedding ───────────────────────────────────────────
+    "sentence-transformers>=3.0.0",  # Local embeddings — no API key required
 ]
 
 [project.scripts]
@@ -36,4 +50,16 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "httpx>=0.28.1",
+    "anyio>=4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]

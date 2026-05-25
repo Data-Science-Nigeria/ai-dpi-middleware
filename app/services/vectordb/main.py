@@ -6,9 +6,9 @@ from app.services.vectordb.providers import qdrant as qdrant_provider
 from app.services.vectordb.providers import weaviate as weaviate_provider
 
 _PROVIDERS = {
-    "weaviate": weaviate_provider,
-    "pinecone": pinecone_provider,
-    "qdrant": qdrant_provider,
+    "weaviate": weaviate_provider,   # default — self-hosted Docker or Weaviate Cloud
+    "pinecone": pinecone_provider,   # managed cloud
+    "qdrant": qdrant_provider,       # self-hosted Docker or Qdrant Cloud
 }
 
 

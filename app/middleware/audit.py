@@ -26,22 +26,24 @@ def _redact_headers(headers: dict) -> dict:
 
 async def _read_body(receive: Callable) -> tuple[bytes, Callable]:
     """
-    Consume and buffer the request body so it can be both logged
+    Consume and buffer the complete request body so it can be both logged
     and forwarded to the actual route handler.
+
+    Handles chunked bodies (multipart file uploads) by draining all chunks
+    until more_body is False before replaying the concatenated bytes.
     """
     body_parts: list[bytes] = []
 
-    async def receive_wrapper() -> Message:
+    while True:
         message = await receive()
-        if message["type"] == "http.request":
-            body_parts.append(message.get("body", b""))
-        return message
+        if message["type"] != "http.request":
+            break
+        body_parts.append(message.get("body", b""))
+        if not message.get("more_body", False):
+            break
 
-    # Drain the stream once to capture the body
-    initial = await receive()
-    body = initial.get("body", b"")
+    body = b"".join(body_parts)
 
-    # Return a new `receive` callable that replays the body
     async def replay() -> Message:
         return {"type": "http.request", "body": body, "more_body": False}
 

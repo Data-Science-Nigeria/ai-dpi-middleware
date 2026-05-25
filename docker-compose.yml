@@ -1,4 +1,5 @@
 services:
+  # ── Application ──────────────────────────────────────────────────────────────
   api:
     build: .
     ports:
@@ -10,8 +11,13 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data   # document uploads, audio, images
     restart: unless-stopped
 
+  # ── Cache / session store ─────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     ports:
@@ -26,5 +32,53 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ── Sovereign vector database (Weaviate) ──────────────────────────────────
+  # Primary RAG store. Runs fully on-premise — no data leaves the host.
+  # HTTP port 8080 and gRPC port 50051 are used by the Python v4 client.
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.25.4
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none       # vectors are supplied externally
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: weaviate
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Sovereign LLM (Ollama) ────────────────────────────────────────────────
+  # Local inference — pull any open-weight model, no API key needed.
+  # GPU: add `deploy.resources.reservations.devices` below and set runtime.
+  # First run: exec into container and run `ollama pull llama3.2`
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      OLLAMA_HOST: "0.0.0.0"
+    # Uncomment to enable NVIDIA GPU passthrough:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    restart: unless-stopped
+
 volumes:
   redis_data:
+  weaviate_data:
+  ollama_models:

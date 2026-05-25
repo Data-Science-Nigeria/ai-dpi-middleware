@@ -4,7 +4,19 @@ from app.config import get_config
 from app.services.chat.providers import anthropic as anthropic_provider
 from app.services.chat.providers import gemini as gemini_provider
 from app.services.chat.providers import groq as groq_provider
+from app.services.chat.providers import ollama as ollama_provider
 from app.services.chat.providers import openai as openai_provider
+
+
+def _load_system_prompt(cfg: dict) -> str | None:
+    import os
+    path = cfg["llm"].get("system_prompt_path")
+    if not path or not os.path.isfile(path):
+        return None
+    with open(path) as f:
+        raw = yaml.safe_load(f) or {}
+        prompt = raw.get("SYSTEM_PROMPT")
+        return prompt if isinstance(prompt, str) else None
 
 
 async def chat(
@@ -15,18 +27,13 @@ async def chat(
     system: str | None = None,
     max_tokens: int = 1024,
 ) -> str:
-    if system is None:
-        cfg = get_config()
-        has_system = cfg['llm'].get("system_prompt_path", None)
-        if has_system:
-            with open(cfg['llm']['system_prompt_path']) as f:
-                raw = yaml.safe_load(f) or {}
-                system = raw.get('SYSTEM_PROMPT', None)
-                if not isinstance(system, str):
-                    system = None
+    cfg = get_config()
 
-    if system is not None and system.find("{context}"):
-        system = system.format(document=context)
+    if system is None:
+        system = _load_system_prompt(cfg)
+
+    if system is not None and "{context}" in system:
+        system = system.format(context=context or "")
 
     if provider == "anthropic":
         return await anthropic_provider.chat(
@@ -45,6 +52,10 @@ async def chat(
         return await gemini_provider.chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
         )
+    if provider == "ollama":
+        return await ollama_provider.chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
 
     raise ValueError(f"Unsupported provider: {provider!r}")
 
@@ -56,6 +67,11 @@ async def stream_chat(
     system: str | None = None,
     max_tokens: int = 1024,
 ):
+    cfg = get_config()
+
+    if system is None:
+        system = _load_system_prompt(cfg)
+
     if provider == "anthropic":
         async for chunk in anthropic_provider.stream_chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
@@ -75,6 +91,11 @@ async def stream_chat(
             yield chunk
     elif provider == "gemini":
         async for chunk in gemini_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        ):
+            yield chunk
+    elif provider == "ollama":
+        async for chunk in ollama_provider.stream_chat(
             messages=messages, model=model, system=system, max_tokens=max_tokens,
         ):
             yield chunk
