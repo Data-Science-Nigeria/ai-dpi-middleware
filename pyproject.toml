@@ -9,7 +9,6 @@ dependencies = [
     "deepgram-sdk>=7.1.1",
     "elevenlabs>=2.47.0",
     "fastapi>=0.135.2",
-    "google-generativeai>=0.8.0",
     "groq>=1.1.2",
     "httpx>=0.28.1",
     "jwt>=1.4.0",
@@ -40,6 +39,8 @@ dependencies = [
     "jsonschema>=4.23.0",            # JSON Schema validation for extraction output
     # ── Sovereign / local embedding ───────────────────────────────────────────
     "sentence-transformers>=3.0.0",  # Local embeddings — no API key required
+    "google-genai>=2.6.0",
+    "prometheus-client>=0.25.0",
 ]
 
 [project.scripts]

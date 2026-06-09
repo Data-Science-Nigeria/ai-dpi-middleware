@@ -150,22 +150,18 @@ async def _groq(model: str, text: str, schema_str: str, feedback: str) -> str:
 
 
 async def _gemini(model: str, text: str, schema_str: str, feedback: str) -> str:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     cfg = get_config()["llm"]["providers"]["gemini"]
-    genai.configure(api_key=cfg["api_key"])
+    client = genai.Client(api_key=cfg["api_key"])
 
     prompt = (
         f"Extract structured data from the text below. "
         f"Return ONLY valid JSON conforming to this schema:\n{schema_str}\n\n"
         f"Text:\n{text}{feedback}"
     )
-    gemini_model = genai.GenerativeModel(
-        model_name=model,
-        generation_config=genai.GenerationConfig(
-            response_mime_type="application/json",
-        ),
-    )
-    resp = await gemini_model.generate_content_async(prompt)
+    config = types.GenerateContentConfig(response_mime_type="application/json")
+    resp = await client.aio.models.generate_content(model=model, contents=prompt, config=config)
     return resp.text or "{}"
 
 

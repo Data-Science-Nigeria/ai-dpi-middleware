@@ -2,7 +2,7 @@
 
 > **Developed and maintained by [Data Science Nigeria](https://datasciencenigeria.org)**
 
-An open, model-agnostic AI middleware layer for **Digital Public Infrastructure (DPI)**. Delivers LLM chat, speech-to-text, text-to-speech, and RAG/vector capabilities through a single secure FastAPI gateway — with plug-and-play provider switching and no vendor lock-in.
+An open, model-agnostic AI middleware layer for **Digital Public Infrastructure (DPI)**. Delivers LLM chat, RAG document intelligence, speech, translation, and structured extraction through a single secure FastAPI gateway — with plug-and-play provider switching and no vendor lock-in.
 
 ---
 
@@ -10,62 +10,18 @@ An open, model-agnostic AI middleware layer for **Digital Public Infrastructure 
 
 | Capability | Providers |
 |------------|-----------|
-| **LLM Chat** | Anthropic (Claude), OpenAI (GPT-4o), Groq (Llama 3.3), Generic OpenAI-compatible |
+| **LLM Chat + Streaming** | Anthropic, OpenAI, Groq, Gemini, Generic OpenAI-compatible, **Ollama (sovereign)** |
+| **RAG Ingestion** | PDF, DOCX, PPTX, XLSX, CSV, RTF, ODT, TXT, MD — OCR for scanned docs |
+| **Structured Extraction** | JSON Schema-constrained field extraction, provider-native structured output |
+| **Translation** | LLM-backed, 100+ languages including African low-resource languages |
 | **Speech-to-Text** | Groq Whisper, OpenAI Whisper, Deepgram Nova-3, Spitch, Intron Sahara |
-| **Text-to-Speech** | Groq PlayAI/Orpheus, OpenAI, ElevenLabs (32 languages), Spitch, Intron Sahara |
-| **RAG / Vector DB** | Weaviate (open-source), Pinecone (managed), Qdrant (open-source + cloud) |
+| **Text-to-Speech** | Groq PlayAI/Orpheus, OpenAI, ElevenLabs, Spitch, Intron Sahara |
+| **Embeddings** | OpenAI (cloud), sentence-transformers **(sovereign, no API key)** |
+| **Vector DB** | Weaviate (open-source), Qdrant (open-source), Pinecone (managed) |
 | **Auth** | Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), Token Introspection |
-| **Caching & Rate Limiting** | Redis — per-role limits on every endpoint |
+| **Session History** | Redis-backed multi-turn conversation history with configurable TTL |
+| **Caching + Rate Limiting** | Redis — per-role limits on every endpoint |
 | **Audit** | Structured JSON audit log with trace IDs on all requests |
-
----
-
-## Project Structure
-
-```
-app/
-├── main.py                        # App wiring and lifespan
-├── config.py                      # YAML config loader
-├── default_config.yaml            # All configuration lives here
-├── auth/
-│   ├── oauth.py                   # JWT validation (local HS256 + OIDC RS256/ES256)
-│   └── rbac.py                    # require_roles() FastAPI dependency
-├── middleware/
-│   ├── auth.py                    # Auth middleware with public path bypass
-│   ├── audit.py                   # Structured audit logging
-│   ├── logger.py                  # Request/response timing logger
-│   └── rate_limit.py              # Redis-backed per-role rate limiting
-├── providers/
-│   ├── deepgram.py                # Deepgram client factory
-│   ├── elevenlabs.py              # ElevenLabs client factory
-│   └── intron.py                  # Intron API config (no SDK)
-├── routers/
-│   ├── health.py                  # GET / (docs page) + GET /health
-│   └── v1/
-│       ├── auth_route.py          # POST /api/v1/auth/token, GET /api/v1/auth/me
-│       ├── chat_route.py          # POST /api/v1/ai, /ai/stream, /ai/add_vector_db
-│       ├── stt_route.py           # POST /api/v1/stt/transcribe
-│       └── tts_route.py           # POST /api/v1/tts/synthesize
-├── schemas/
-│   ├── auth.py                    # TokenRequest, TokenResponse
-│   ├── ai.py                      # ChatRequest, ChatResponse, EmbeddingRequest
-│   └── tts.py                     # TTSRequest with full provider/model/voice validation
-├── services/
-│   ├── chat/                      # LLM routing + provider implementations
-│   ├── stt/
-│   │   ├── models/                # Per-provider model registries
-│   │   └── providers/             # groq, openai, spitch, deepgram, intron
-│   ├── tts/
-│   │   ├── models/                # Per-provider model/voice/format registries
-│   │   └── providers/             # groq, openai, spitch, elevenlabs, intron
-│   ├── vectordb/
-│   │   └── providers/             # weaviate, pinecone, qdrant
-│   ├── embedding/                 # OpenAI text embeddings
-│   └── redis.py                   # Async Redis client
-└── handlers/
-    ├── lifespan.py                # Startup / shutdown hooks
-    └── exception.py               # Global HTTP + validation error handlers
-```
 
 ---
 
@@ -73,8 +29,8 @@ app/
 
 ### Prerequisites
 
-- Docker + Docker Compose v2 **or** Python 3.11+ with [uv](https://docs.astral.sh/uv/)
-- API keys for the AI providers you intend to use
+- Docker + Docker Compose v2 **or** Python 3.12+ with [uv](https://docs.astral.sh/uv/)
+- API keys for the cloud providers you use (none needed for sovereign/local mode)
 
 ### 1. Clone
 
@@ -87,7 +43,7 @@ cd ai-dpi-middleware
 
 Edit `app/default_config.yaml`. Replace every `[PLACEHOLDER]` with real values.
 
-**Minimum required — auth block:**
+**Minimum — auth:**
 
 ```yaml
 auth:
@@ -105,141 +61,234 @@ auth:
         roles: ["admin", "user"]
 ```
 
-**LLM providers (add keys for providers you use):**
+**LLM providers:**
 
 ```yaml
 llm:
   providers:
     anthropic:
       api_key: "sk-ant-..."
-      default_model: "claude-sonnet-4-6"
     openai:
       api_key: "sk-..."
-      default_model: "gpt-4o"
     groq:
       api_key: "gsk_..."
-      default_model: "llama-3.3-70b-versatile"
 ```
 
-**Speech providers:**
-
-```yaml
-speech:
-  providers:
-    groq:      { api_key: "gsk_..." }
-    openai:    { api_key: "sk-..." }
-    deepgram:  { api_key: "..." }
-    elevenlabs:{ api_key: "..." }
-    spitch:    { api_key: "..." }
-    intron:
-      api_key: "..."
-      base_url: "https://api.intron.africa/v1"
-```
-
-**Vector database (choose one):**
-
-```yaml
-# Weaviate (open-source, runs in Docker)
-llm:
-  vector_database:
-    provider: "weaviate"
-    type: "http"
-    http_host: "weaviate"   # Docker service name
-    http_port: 8080
-    grpc_port: 50051
-    collection_name: "default_collection"
-
-# Pinecone (managed — no Docker needed)
-llm:
-  vector_database:
-    provider: "pinecone"
-    API_KEY: "[PINECONE_API_KEY]"
-    collection_name: "my-index"   # pre-created; dim=1536 for text-embedding-3-small
-
-# Qdrant (open-source + managed cloud)
-llm:
-  vector_database:
-    provider: "qdrant"
-    type: "http"
-    http_host: "qdrant"
-    http_port: 6333
-    collection_name: "default_collection"
-```
-
-### 3. Run with Docker Compose (recommended)
+### 3. Run
 
 ```bash
-# Start app + Redis
+# Dev (cloud providers) — starts api + redis only
 docker compose up -d
 
-# View logs
+# Sovereign (local models) — adds Weaviate + Ollama
+docker compose --profile sovereign up -d
+
 docker compose logs -f api
-
-# Rebuild after changes
-docker compose down
-docker compose build --no-cache
-docker compose up -d
 ```
 
-**If using Weaviate or Qdrant locally**, add the service to `docker-compose.yml`:
-
-```yaml
-# Weaviate
-weaviate:
-  image: semitechnologies/weaviate:latest
-  ports: ["8080:8080", "50051:50051"]
-  environment:
-    AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
-    DEFAULT_VECTORIZER_MODULE: "none"
-
-# Qdrant
-qdrant:
-  image: qdrant/qdrant:latest
-  ports: ["6333:6333"]
-```
-
-### 4. Run locally (development)
-
+**Local dev:**
 ```bash
 uv sync
-.venv/bin/uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### 5. Verify
+### 4. Verify
 
 ```bash
 curl http://localhost:8000/health
-# {"status":"ok","version":"0.1.0"}
 
-# Get a token
 curl -X POST http://localhost:8000/api/v1/auth/token \
   -d "username=my-client&password=change-me"
 ```
 
-Browse the interactive docs at `http://localhost:8000/docs`.
+Browse interactive docs at `http://localhost:8000/docs`.
+
+---
+
+## Sovereign Deployment (Fully Offline)
+
+Run with zero external API calls — no vendor keys, no data leaving the host.
+
+### Stack
+
+```
+Ollama        → local LLM inference (any open-weight model)
+Weaviate      → local vector database  (Docker, data on-disk)
+sentence-transformers → local embeddings (downloaded once, cached)
+Tesseract     → local OCR
+```
+
+All four ship in the `docker-compose.yml` already. Just configure:
+
+```yaml
+# app/default_config.yaml
+
+llm:
+  providers:
+    ollama:
+      base_url: "http://ollama:11434"
+      default_model: "llama3.2"
+
+  embedding_model:
+    provider: "local"
+    model: "all-MiniLM-L6-v2"       # downloaded once on first use
+
+  vector_database:
+    provider: "weaviate"
+    type: "http"
+    http_host: "weaviate"
+```
+
+Then pull a model and start:
+
+```bash
+docker compose --profile sovereign up -d
+
+# Pull a model (first time only — ~2 GB)
+docker compose exec ollama ollama pull llama3.2
+
+# Chat
+curl -X POST http://localhost:8000/api/v1/ai \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"Hello"}],"provider":"ollama","model":"llama3.2"}'
+```
+
+### Using a custom / fine-tuned model
+
+If you have a GGUF file (fine-tuned on local-language or domain data):
+
+```bash
+# 1. Create a Modelfile
+cat > Modelfile <<EOF
+FROM /models/my-custom-model.gguf
+SYSTEM "You are a DPI assistant for Nigerian public services."
+PARAMETER temperature 0.9
+EOF
+
+# 2. Mount model into container (docker-compose.yml volumes):
+#    - ./models:/models
+
+# 3. Register with Ollama
+docker compose exec ollama ollama create my-model -f /models/Modelfile
+
+# 4. Use it
+curl ... -d '{"provider":"ollama","model":"my-model",...}'
+```
+
+Supported input formats: **GGUF** (native). For Hugging Face safetensors, convert with [llama.cpp's `convert_hf_to_gguf.py`](https://github.com/ggerganov/llama.cpp) first.
+
+### Recommended sovereign models
+
+| Use case | Model | Size |
+|---|---|---|
+| General chat | `llama3.2` | 2 GB |
+| Long context / reasoning | `qwen2.5:7b` | 4 GB |
+| Multilingual (African langs) | `aya-expanse:8b` | 5 GB |
+| Low-resource device | `phi3.5:mini` | 2 GB |
+| Embeddings | `nomic-embed-text` | 270 MB |
+
+Pull any with `ollama pull <model>`.
+
+---
+
+## RAG — Document Ingestion
+
+```bash
+# Ingest a PDF (Tesseract OCR for scanned pages)
+curl -X POST http://localhost:8000/api/v1/documents/ingest \
+  -H "Authorization: Bearer <admin-token>" \
+  -F "file=@report.pdf" \
+  -F "ocr_backend=tesseract" \
+  -F "language=eng"
+
+# Ingest a Word doc
+curl -X POST http://localhost:8000/api/v1/documents/ingest \
+  -H "Authorization: Bearer <admin-token>" \
+  -F "file=@policy.docx"
+
+# Ingest raw text
+curl -X POST http://localhost:8000/api/v1/documents/ingest/text \
+  -H "Authorization: Bearer <admin-token>" \
+  -d "text=The eligibility criteria are...&source=policy-manual"
+```
+
+**Supported formats:** PDF, DOCX, DOC, PPTX, XLSX, CSV, RTF, ODT, TXT, MD, PNG, JPG, TIFF, BMP, WEBP
+
+**OCR backends:** `tesseract` (local, sovereign) · `llm` (Claude/GPT-4o vision, higher quality)
+
+Chat automatically retrieves relevant context from stored documents — no extra configuration needed.
+
+---
+
+## Structured Extraction
+
+Extract typed fields from free-form text using the LLM's native structured output:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/extract \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Full name: Amina Kofi. Date of birth: 1990-03-15. ID: GH-12345.",
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "full_name":     { "type": "string" },
+        "date_of_birth": { "type": "string" },
+        "id_number":     { "type": "string" }
+      },
+      "required": ["full_name", "id_number"]
+    },
+    "provider": "anthropic"
+  }'
+```
+
+Output is validated against the schema. Failed validation triggers a retry with the error fed back to the LLM.
+
+---
+
+## Session History (Multi-turn Chat)
+
+Pass `session_id` in any chat request to maintain conversation history across calls:
+
+```bash
+# Turn 1
+curl ... -d '{"session_id":"user-123","messages":[{"role":"user","content":"What is DPI?"}],...}'
+
+# Turn 2 — prior context prepended automatically
+curl ... -d '{"session_id":"user-123","messages":[{"role":"user","content":"Give an example."}],...}'
+```
+
+Requires `redis.enabled: true` in config. Session TTL and history limit are configurable in the `chat:` block.
 
 ---
 
 ## API Reference
 
-### Public endpoints
+### Public
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/` | Documentation landing page |
-| `GET` | `/health` | JSON health check |
-| `POST` | `/api/v1/auth/token` | Exchange `client_id` + `client_secret` for JWT |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/v1/auth/token` | Get JWT |
 
-### Protected endpoints (Bearer token required)
+### Protected (Bearer token required)
 
 | Method | Path | Role | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/v1/auth/me` | any | Verify token, return identity |
-| `POST` | `/api/v1/ai` | `user` | LLM chat with optional RAG context |
-| `POST` | `/api/v1/ai/stream` | `admin` | Streaming LLM response (SSE) |
-| `POST` | `/api/v1/ai/add_vector_db` | `admin` | Store text embedding in vector DB |
-| `POST` | `/api/v1/stt/transcribe` | `user` | Speech → text |
-| `POST` | `/api/v1/tts/synthesize` | `user` | Text → speech |
+| `GET` | `/api/v1/auth/me` | any | Verify token |
+| `POST` | `/api/v1/ai` | user | Chat with RAG context |
+| `POST` | `/api/v1/ai/stream` | admin | Streaming chat (SSE) |
+| `POST` | `/api/v1/extract` | user | Structured field extraction |
+| `POST` | `/api/v1/translate` | user | Text translation |
+| `POST` | `/api/v1/stt/transcribe` | user | Speech → text |
+| `POST` | `/api/v1/tts/synthesize` | user | Text → speech |
+| `POST` | `/api/v1/documents/ingest` | admin | Ingest document into RAG |
+| `POST` | `/api/v1/documents/ingest/text` | admin | Ingest raw text into RAG |
+| `POST` | `/api/v1/ai/add_vector_db` | admin | Embed and store text |
+| `GET` | `/api/v1/ai/session/{id}` | admin | Get session history |
+| `DELETE` | `/api/v1/ai/session/{id}` | admin | Clear session |
 
 ---
 
@@ -248,11 +297,9 @@ Browse the interactive docs at `http://localhost:8000/docs`.
 ### Local JWT
 
 ```bash
-# Get token
 curl -X POST http://localhost:8000/api/v1/auth/token \
   -d "username=my-client&password=my-secret"
 
-# Use token
 curl http://localhost:8000/api/v1/ai \
   -H "Authorization: Bearer eyJ..." \
   -H "Content-Type: application/json" \
@@ -260,8 +307,6 @@ curl http://localhost:8000/api/v1/ai \
 ```
 
 ### OIDC (Keycloak, Auth0, Google)
-
-Tokens from any OIDC provider are accepted directly — no local exchange needed. Configure an `online` issuer in `default_config.yaml`:
 
 ```yaml
 auth:
@@ -273,45 +318,31 @@ auth:
       algorithm: "RS256"
 ```
 
-Roles are read from: `roles` claim, `realm_access.roles` (Keycloak), or `resource_access.<client>.roles`.
-
----
-
-## RBAC
-
-| Role | Endpoints |
-|------|-----------|
-| `user` | `/ai`, `/stt/transcribe`, `/tts/synthesize`, `/auth/me` |
-| `admin` | All `user` endpoints + `/ai/stream`, `/ai/add_vector_db` |
+Roles read from: `roles` claim, `realm_access.roles` (Keycloak), or `resource_access.<client>.roles`.
 
 ---
 
 ## Provider Matrix
 
-Alphabetical. Only providers integrated into this middleware are listed.
-
-| Provider | LLM / Chat | STT | TTS | Language Coverage |
-|----------|------------|-----|-----|-------------------|
-| `anthropic` | ✓ Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 | — | — | 100+ languages |
-| `deepgram` | — | ✓ Nova-3 (6.84% WER), Nova-2, Enhanced, Base — auto-detect, diarization, keyterm prompting | — | 30+ incl. code-switching (EN, ES, FR, DE, HI, RU, PT, JA, IT, NL) |
-| `elevenlabs` | — | — | ✓ eleven_multilingual_v2 (emotionally-aware), eleven_flash_v2_5 (<75ms), eleven_turbo_v2_5, eleven_v3, eleven_monolingual_v1 | 32 languages |
-| `groq` | ✓ Llama 4 Scout 17B, Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B, Gemma2 9B | ✓ whisper-large-v3-turbo, whisper-large-v3, distil-whisper-large-v3-en | ✓ orpheus-v1-english (vocal direction), orpheus-arabic-saudi, playai-tts, playai-tts-arabic | Multilingual |
-| `intron` | — | ✓ Sahara v1 — 23 African languages, 500+ accents | ✓ Sahara TTS v1 | sw, ha, yo, ig, am, so, zu, xh, af, wo, ff, en + more |
-| `openai` | ✓ GPT-4o, GPT-4o mini, o1, o3-mini | ✓ gpt-4o-transcribe, gpt-4o-mini-transcribe, whisper-1 | ✓ gpt-4o-mini-tts (steerable), tts-1, tts-1-hd | 50+ languages |
-| `spitch` | — | ✓ Mansa v1 — African-accent optimised, streaming, diarization | ✓ Legacy (African tonal voices) | yo, ha, ig, sw, am + more; EN; bidirectional translation |
+| Provider | Chat | STT | TTS | Notes |
+|----------|------|-----|-----|-------|
+| `anthropic` | ✓ | — | — | Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 |
+| `openai` | ✓ | ✓ | ✓ | GPT-4o, Whisper, TTS-1/HD |
+| `groq` | ✓ | ✓ | ✓ | Llama 4, Whisper, PlayAI/Orpheus |
+| `gemini` | ✓ | — | — | Gemini 2.5 Flash/Pro |
+| `deepgram` | — | ✓ | — | Nova-3, 30+ languages |
+| `elevenlabs` | — | — | ✓ | 32 languages, <75ms flash model |
+| `spitch` | — | ✓ | ✓ | African-accent optimised |
+| `intron` | — | ✓ | ✓ | 23 African languages, 500+ accents |
+| **`ollama`** | **✓** | — | — | **Sovereign — any GGUF model, fully offline** |
 
 ---
 
 ## Development
 
 ```bash
-# Install with dev extras
 uv sync
-
-# Run tests
 uv run pytest
-
-# Lint
 uv run ruff check .
 ```
 

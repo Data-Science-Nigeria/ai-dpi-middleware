@@ -58,7 +58,7 @@ async def extract(
 
     data, valid, errors = await extraction_service.extract(
         text=body.text,
-        output_schema=body.schema,
+        output_schema=body.output_schema,
         provider=body.provider,
         model=model,
         max_retries=body.max_retries,

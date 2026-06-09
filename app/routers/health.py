@@ -1,5 +1,9 @@
+import time
+
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
+
+import prometheus_client
 
 from app.config import get_config
 
@@ -785,6 +789,51 @@ async def root():
     return HTMLResponse(content=_HTML)
 
 
-@router.get("/health", summary="Health check")
+@router.get("/health", summary="Health check — dependency status")
 async def health():
-    return {"status": "ok", "version": _app_cfg.get('version', "0.1.0")}
+    cfg = get_config()
+    checks: dict[str, str] = {}
+
+    # Redis
+    if cfg.get("redis", {}).get("enabled"):
+        try:
+            from app.services.redis import get_client
+            r = get_client()
+            await r.ping()
+            checks["redis"] = "ok"
+        except Exception as exc:
+            checks["redis"] = f"error: {exc}"
+    else:
+        checks["redis"] = "disabled"
+
+    # Vector DB (Weaviate only — fast liveness check)
+    vdb_cfg = cfg.get("llm", {}).get("vector_database", {})
+    provider = vdb_cfg.get("provider", "weaviate")
+    if vdb_cfg.get("type") == "http":
+        try:
+            import httpx
+            host = vdb_cfg.get("http_host", "localhost")
+            port = vdb_cfg.get("http_port", 8080)
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                r = await client.get(f"http://{host}:{port}/v1/.well-known/ready")
+            checks[provider] = "ok" if r.status_code == 200 else f"http {r.status_code}"
+        except Exception as exc:
+            checks[provider] = f"error: {exc}"
+    else:
+        checks[provider] = "skipped"
+
+    overall = "ok" if all(v in ("ok", "disabled", "skipped") for v in checks.values()) else "degraded"
+    return {
+        "status": overall,
+        "version": _app_cfg.get("version", "0.1.0"),
+        "timestamp": time.time(),
+        "checks": checks,
+    }
+
+
+@router.get("/metrics", summary="Prometheus metrics", response_class=PlainTextResponse, include_in_schema=False)
+async def metrics():
+    return PlainTextResponse(
+        prometheus_client.generate_latest().decode(),
+        media_type=prometheus_client.CONTENT_TYPE_LATEST,
+    )

@@ -11,8 +11,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      weaviate:
-        condition: service_healthy
     volumes:
       - ./data:/app/data   # document uploads, audio, images
     restart: unless-stopped
@@ -33,9 +31,9 @@ services:
     restart: unless-stopped
 
   # ── Sovereign vector database (Weaviate) ──────────────────────────────────
-  # Primary RAG store. Runs fully on-premise — no data leaves the host.
-  # HTTP port 8080 and gRPC port 50051 are used by the Python v4 client.
+  # Start with: docker compose --profile sovereign up -d
   weaviate:
+    profiles: ["sovereign"]
     image: cr.weaviate.io/semitechnologies/weaviate:1.25.4
     ports:
       - "8080:8080"
@@ -57,10 +55,10 @@ services:
     restart: unless-stopped
 
   # ── Sovereign LLM (Ollama) ────────────────────────────────────────────────
-  # Local inference — pull any open-weight model, no API key needed.
-  # GPU: add `deploy.resources.reservations.devices` below and set runtime.
-  # First run: exec into container and run `ollama pull llama3.2`
+  # Start with: docker compose --profile sovereign up -d
+  # First run: docker compose exec ollama ollama pull llama3.2
   ollama:
+    profiles: ["sovereign"]
     image: ollama/ollama:latest
     ports:
       - "11434:11434"

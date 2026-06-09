@@ -1,29 +1,29 @@
-"""Chat provider — Google Gemini via google-generativeai SDK."""
+"""Chat provider — Google Gemini via google-genai SDK."""
 
 from __future__ import annotations
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.config import get_config
 
-_configured = False
+_client: genai.Client | None = None
 
 
-def _configure() -> None:
-    global _configured
-    if not _configured:
+def _get_client() -> genai.Client:
+    global _client
+    if _client is None:
         api_key = get_config()["llm"]["providers"]["gemini"]["api_key"]
-        genai.configure(api_key=api_key)
-        _configured = True
+        _client = genai.Client(api_key=api_key)
+    return _client
 
 
-def _build_contents(messages: list[dict], system: str | None) -> tuple[list, str | None]:
-    """Convert OpenAI-style messages to Gemini contents format."""
+def _build_contents(messages: list[dict]) -> list[types.Content]:
     contents = []
     for msg in messages:
         role = "user" if msg["role"] == "user" else "model"
-        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-    return contents, system
+        contents.append(types.Content(role=role, parts=[types.Part(text=msg["content"])]))
+    return contents
 
 
 async def chat(
@@ -33,23 +33,22 @@ async def chat(
     max_tokens: int = 1024,
     **kwargs,
 ) -> str:
-    _configure()
+    client = _get_client()
     cfg = get_config()["llm"]["providers"]["gemini"]
-    contents, sys_instruction = _build_contents(messages, system)
+    contents = _build_contents(messages)
 
-    generation_config = genai.GenerationConfig(
+    config = types.GenerateContentConfig(
         max_output_tokens=max_tokens,
         temperature=cfg.get("kwargs", {}).get("temperature", 0.9),
         top_p=cfg.get("kwargs", {}).get("top_p", 0.95),
+        system_instruction=system,
     )
 
-    model_obj = genai.GenerativeModel(
-        model_name=model,
-        system_instruction=sys_instruction,
-        generation_config=generation_config,
+    response = await client.aio.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config,
     )
-
-    response = await model_obj.generate_content_async(contents)
     return response.text
 
 
@@ -60,22 +59,21 @@ async def stream_chat(
     max_tokens: int = 1024,
     **kwargs,
 ):
-    _configure()
+    client = _get_client()
     cfg = get_config()["llm"]["providers"]["gemini"]
-    contents, sys_instruction = _build_contents(messages, system)
+    contents = _build_contents(messages)
 
-    generation_config = genai.GenerationConfig(
+    config = types.GenerateContentConfig(
         max_output_tokens=max_tokens,
         temperature=cfg.get("kwargs", {}).get("temperature", 0.9),
         top_p=cfg.get("kwargs", {}).get("top_p", 0.95),
+        system_instruction=system,
     )
 
-    model_obj = genai.GenerativeModel(
-        model_name=model,
-        system_instruction=sys_instruction,
-        generation_config=generation_config,
-    )
-
-    async for chunk in await model_obj.generate_content_async(contents, stream=True):
+    async for chunk in await client.aio.models.generate_content_stream(
+        model=model,
+        contents=contents,
+        config=config,
+    ):
         if chunk.text:
             yield chunk.text
