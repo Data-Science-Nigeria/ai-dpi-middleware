@@ -207,8 +207,9 @@ _HTML = """\
 
   /* ── METHOD PILLS ── */
   .method { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 5px; font-size: 0.72rem; font-weight: 700; font-family: monospace; }
-  .post { background: #d4f0e4; color: #0a5c28; }
-  .get  { background: #dce8ff; color: #1e3a6e; }
+  .post   { background: #d4f0e4; color: #0a5c28; }
+  .get    { background: #dce8ff; color: #1e3a6e; }
+  .delete { background: #fde8e8; color: #7c1a1a; }
 
   /* ── CODE BLOCKS ── */
   .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
@@ -325,23 +326,45 @@ _HTML = """\
 
   <!-- ── CAPABILITY CARDS ── -->
   <div class="grid" style="margin-top:3rem;">
-    <div class="card">      <h3>LLM Chat</h3>
-      <p>Anthropic Claude, OpenAI GPT-5, Google Gemini, Groq Llama &mdash; model-agnostic routing with streaming and RAG context injection.</p>
+    <div class="card">
+      <h3>Agent Loop</h3>
+      <p>Multi-step LLM reasoning with built-in DPI tools — document search, translation, field extraction, external HTTP calls. One request, autonomous execution.</p>
     </div>
-    <div class="card">      <h3>Speech-to-Text</h3>
-      <p>Groq Whisper, OpenAI, Deepgram Nova-3, Spitch, Intron Sahara. 100+ languages with automatic language detection.</p>
+    <div class="card">
+      <h3>Audit &amp; Rate Limiting</h3>
+      <p>Structured JSON audit log with trace IDs on every request. Per-role Redis rate limiting across all endpoints.</p>
     </div>
-    <div class="card">      <h3>Text-to-Speech</h3>
-      <p>Groq Orpheus, OpenAI, ElevenLabs (32 languages), Spitch, Intron Sahara. True African voice coverage.</p>
-    </div>
-    <div class="card">      <h3>RAG / Vector Store</h3>
-      <p>Weaviate, Pinecone, or Qdrant with OpenAI embeddings. Grounded, context-aware responses from your documents.</p>
-    </div>
-    <div class="card">      <h3>Auth &amp; Identity</h3>
+    <div class="card">
+      <h3>Auth &amp; Identity</h3>
       <p>Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), token introspection. Multi-issuer support.</p>
     </div>
-    <div class="card">      <h3>Audit &amp; Rate Limiting</h3>
-      <p>Structured JSON audit log with trace IDs. Per-role Redis rate limiting on every endpoint.</p>
+    <div class="card">
+      <h3>LLM Chat</h3>
+      <p>Anthropic Claude, OpenAI, Google Gemini, Groq Llama, Ollama &mdash; model-agnostic routing with streaming and RAG context injection.</p>
+    </div>
+    <div class="card">
+      <h3>RAG / Document Intelligence</h3>
+      <p>Ingest PDF, DOCX, PPTX, XLSX, CSV, ODT, RTF and more. OCR for scanned pages. Weaviate, Pinecone, or Qdrant vector store.</p>
+    </div>
+    <div class="card">
+      <h3>Sovereign Deployment</h3>
+      <p>Fully offline stack &mdash; Ollama (any GGUF model), Weaviate Docker, sentence-transformers embeddings, Tesseract OCR. Zero external API calls.</p>
+    </div>
+    <div class="card">
+      <h3>Speech-to-Text</h3>
+      <p>Groq Whisper, OpenAI, Deepgram Nova-3, Spitch, Intron Sahara. 100+ languages with automatic language detection.</p>
+    </div>
+    <div class="card">
+      <h3>Structured Extraction</h3>
+      <p>JSON Schema-constrained field extraction from free-form text. Provider-native structured output with validation and auto-retry.</p>
+    </div>
+    <div class="card">
+      <h3>Text-to-Speech</h3>
+      <p>Groq Orpheus, OpenAI, ElevenLabs (32 languages), Spitch, Intron Sahara. True African voice coverage.</p>
+    </div>
+    <div class="card">
+      <h3>Translation</h3>
+      <p>LLM-backed translation across 100+ languages including African low-resource languages &mdash; Yoruba, Hausa, Igbo, Swahili, Amharic and more.</p>
     </div>
   </div>
 

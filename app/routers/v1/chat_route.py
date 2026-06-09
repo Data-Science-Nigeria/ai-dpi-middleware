@@ -14,7 +14,7 @@ from app.services.chat import main as chat_service
 from app.services.embedding import main as embedding_service
 from app.services.vectordb import main as vectordb
 
-router = APIRouter(prefix="/ai", tags=["AI"])
+router = APIRouter(prefix="/ai", tags=["AI / Chat"])
 
 _cfg = get_config()
 _rl = _cfg.get("llm", {}).get("rate_limit", {})

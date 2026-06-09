@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.routers.v1 import (
+    agent_route,
     auth_route,
     chat_route,
     document_route,
@@ -12,11 +13,12 @@ from app.routers.v1 import (
 
 router = APIRouter(prefix="/v1")
 
-router.include_router(auth_route.router)
-router.include_router(tts_route.router)
-router.include_router(stt_route.router)
+router.include_router(agent_route.router)
 router.include_router(chat_route.router)
-router.include_router(embedding_route.router)
-router.include_router(translate_route.router)
+router.include_router(auth_route.router)
 router.include_router(document_route.router)
 router.include_router(extract_route.router)
+router.include_router(embedding_route.router)
+router.include_router(stt_route.router)
+router.include_router(translate_route.router)
+router.include_router(tts_route.router)

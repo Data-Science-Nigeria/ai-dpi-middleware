@@ -56,7 +56,7 @@ services:
 
   # ── Sovereign LLM (Ollama) ────────────────────────────────────────────────
   # Start with: docker compose --profile sovereign up -d
-  # First run: docker compose exec ollama ollama pull llama3.2
+  # First run: docker compose exec ollama ollama pull qwen2.5:0.5b
   ollama:
     profiles: ["sovereign"]
     image: ollama/ollama:latest

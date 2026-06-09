@@ -78,7 +78,7 @@ llm:
     # Sovereign / local — no external API calls
     ollama:
       base_url: "http://ollama:11434"  # use http://localhost:11434 for bare-metal
-      default_model: "llama3.2"        # any model pulled via `ollama pull <model>`
+      default_model: "qwen2.5:0.5b"        # any model pulled via `ollama pull <model>`
       timeout_seconds: 120
       options:
         temperature: 0.9

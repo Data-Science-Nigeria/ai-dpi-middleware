@@ -12,7 +12,7 @@ from app.schemas.document import IngestResponse
 from app.services.document import pipeline
 from app.services.document.extractors import SUPPORTED_EXTENSIONS
 
-router = APIRouter(prefix="/documents", tags=["Documents / RAG Ingestion"])
+router = APIRouter(prefix="/documents", tags=["Documents"])
 
 # ── File type classification ──────────────────────────────────────────────────
 

@@ -8,20 +8,20 @@ An open, model-agnostic AI middleware layer for **Digital Public Infrastructure 
 
 ## Features
 
-| Capability | Providers |
-|------------|-----------|
-| **LLM Chat + Streaming** | Anthropic, OpenAI, Groq, Gemini, Generic OpenAI-compatible, **Ollama (sovereign)** |
-| **RAG Ingestion** | PDF, DOCX, PPTX, XLSX, CSV, RTF, ODT, TXT, MD — OCR for scanned docs |
-| **Structured Extraction** | JSON Schema-constrained field extraction, provider-native structured output |
-| **Translation** | LLM-backed, 100+ languages including African low-resource languages |
-| **Speech-to-Text** | Groq Whisper, OpenAI Whisper, Deepgram Nova-3, Spitch, Intron Sahara |
-| **Text-to-Speech** | Groq PlayAI/Orpheus, OpenAI, ElevenLabs, Spitch, Intron Sahara |
-| **Embeddings** | OpenAI (cloud), sentence-transformers **(sovereign, no API key)** |
-| **Vector DB** | Weaviate (open-source), Qdrant (open-source), Pinecone (managed) |
-| **Auth** | Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), Token Introspection |
-| **Session History** | Redis-backed multi-turn conversation history with configurable TTL |
-| **Caching + Rate Limiting** | Redis — per-role limits on every endpoint |
-| **Audit** | Structured JSON audit log with trace IDs on all requests |
+| Capability                        | Providers                                                                               |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| **LLM Chat + Streaming**    | Anthropic, OpenAI, Groq, Gemini, Generic OpenAI-compatible,**Ollama (sovereign)** |
+| **RAG Ingestion**           | PDF, DOCX, PPTX, XLSX, CSV, RTF, ODT, TXT, MD — OCR for scanned docs                   |
+| **Structured Extraction**   | JSON Schema-constrained field extraction, provider-native structured output             |
+| **Translation**             | LLM-backed, 100+ languages including African low-resource languages                     |
+| **Speech-to-Text**          | Groq Whisper, OpenAI Whisper, Deepgram Nova-3, Spitch, Intron Sahara                    |
+| **Text-to-Speech**          | Groq PlayAI/Orpheus, OpenAI, ElevenLabs, Spitch, Intron Sahara                          |
+| **Embeddings**              | OpenAI (cloud), sentence-transformers**(sovereign, no API key)**                  |
+| **Vector DB**               | Weaviate (open-source), Qdrant (open-source), Pinecone (managed)                        |
+| **Auth**                    | Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), Token Introspection      |
+| **Session History**         | Redis-backed multi-turn conversation history with configurable TTL                      |
+| **Caching + Rate Limiting** | Redis — per-role limits on every endpoint                                              |
+| **Audit**                   | Structured JSON audit log with trace IDs on all requests                                |
 
 ---
 
@@ -87,6 +87,7 @@ docker compose logs -f api
 ```
 
 **Local dev:**
+
 ```bash
 uv sync
 uv run uvicorn app.main:app --reload --port 8000
@@ -127,7 +128,7 @@ llm:
   providers:
     ollama:
       base_url: "http://ollama:11434"
-      default_model: "llama3.2"
+      default_model: "qwen2.5:0.5b"
 
   embedding_model:
     provider: "local"
@@ -145,13 +146,13 @@ Then pull a model and start:
 docker compose --profile sovereign up -d
 
 # Pull a model (first time only — ~2 GB)
-docker compose exec ollama ollama pull llama3.2
+docker compose exec ollama ollama pull qwen2.5:0.5b
 
 # Chat
 curl -X POST http://localhost:8000/api/v1/ai \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","content":"Hello"}],"provider":"ollama","model":"llama3.2"}'
+  -d '{"messages":[{"role":"user","content":"Hello"}],"provider":"ollama","model":"qwen2.5:0.5b"}'
 ```
 
 ### Using a custom / fine-tuned model
@@ -176,17 +177,18 @@ docker compose exec ollama ollama create my-model -f /models/Modelfile
 curl ... -d '{"provider":"ollama","model":"my-model",...}'
 ```
 
-Supported input formats: **GGUF** (native). For Hugging Face safetensors, convert with [llama.cpp's `convert_hf_to_gguf.py`](https://github.com/ggerganov/llama.cpp) first.
+Supported input formats: **GGUF** (native). For Hugging Face safetensors, convert with [llama.cpp&#39;s `convert_hf_to_gguf.py`](https://github.com/ggerganov/llama.cpp) first.
 
 ### Recommended sovereign models
 
-| Use case | Model | Size |
-|---|---|---|
-| General chat | `llama3.2` | 2 GB |
-| Long context / reasoning | `qwen2.5:7b` | 4 GB |
-| Multilingual (African langs) | `aya-expanse:8b` | 5 GB |
-| Low-resource device | `phi3.5:mini` | 2 GB |
-| Embeddings | `nomic-embed-text` | 270 MB |
+| Use case                     | Model                   | Size   |
+| ---------------------------- | ----------------------- | ------ |
+| **Local dev / testing**      | `qwen2.5:0.5b` ★ default | 397 MB |
+| General chat                 | `llama3.2`              | 2 GB   |
+| Long context / reasoning     | `qwen2.5:7b`            | 4 GB   |
+| Multilingual (African langs) | `aya-expanse:8b`        | 5 GB   |
+| Low-resource device          | `phi3.5:mini`           | 2 GB   |
+| Embeddings                   | `nomic-embed-text`      | 270 MB |
 
 Pull any with `ollama pull <model>`.
 
@@ -268,27 +270,27 @@ Requires `redis.enabled: true` in config. Session TTL and history limit are conf
 
 ### Public
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Health check |
-| `POST` | `/api/v1/auth/token` | Get JWT |
+| Method   | Path                   | Description  |
+| -------- | ---------------------- | ------------ |
+| `GET`  | `/health`            | Health check |
+| `POST` | `/api/v1/auth/token` | Get JWT      |
 
 ### Protected (Bearer token required)
 
-| Method | Path | Role | Description |
-|--------|------|------|-------------|
-| `GET` | `/api/v1/auth/me` | any | Verify token |
-| `POST` | `/api/v1/ai` | user | Chat with RAG context |
-| `POST` | `/api/v1/ai/stream` | admin | Streaming chat (SSE) |
-| `POST` | `/api/v1/extract` | user | Structured field extraction |
-| `POST` | `/api/v1/translate` | user | Text translation |
-| `POST` | `/api/v1/stt/transcribe` | user | Speech → text |
-| `POST` | `/api/v1/tts/synthesize` | user | Text → speech |
-| `POST` | `/api/v1/documents/ingest` | admin | Ingest document into RAG |
-| `POST` | `/api/v1/documents/ingest/text` | admin | Ingest raw text into RAG |
-| `POST` | `/api/v1/ai/add_vector_db` | admin | Embed and store text |
-| `GET` | `/api/v1/ai/session/{id}` | admin | Get session history |
-| `DELETE` | `/api/v1/ai/session/{id}` | admin | Clear session |
+| Method     | Path                              | Role  | Description                 |
+| ---------- | --------------------------------- | ----- | --------------------------- |
+| `GET`    | `/api/v1/auth/me`               | any   | Verify token                |
+| `POST`   | `/api/v1/ai`                    | user  | Chat with RAG context       |
+| `POST`   | `/api/v1/ai/stream`             | admin | Streaming chat (SSE)        |
+| `POST`   | `/api/v1/extract`               | user  | Structured field extraction |
+| `POST`   | `/api/v1/translate`             | user  | Text translation            |
+| `POST`   | `/api/v1/stt/transcribe`        | user  | Speech → text              |
+| `POST`   | `/api/v1/tts/synthesize`        | user  | Text → speech              |
+| `POST`   | `/api/v1/documents/ingest`      | admin | Ingest document into RAG    |
+| `POST`   | `/api/v1/documents/ingest/text` | admin | Ingest raw text into RAG    |
+| `POST`   | `/api/v1/ai/add_vector_db`      | admin | Embed and store text        |
+| `GET`    | `/api/v1/ai/session/{id}`       | admin | Get session history         |
+| `DELETE` | `/api/v1/ai/session/{id}`       | admin | Clear session               |
 
 ---
 
@@ -324,17 +326,17 @@ Roles read from: `roles` claim, `realm_access.roles` (Keycloak), or `resource_ac
 
 ## Provider Matrix
 
-| Provider | Chat | STT | TTS | Notes |
-|----------|------|-----|-----|-------|
-| `anthropic` | ✓ | — | — | Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 |
-| `openai` | ✓ | ✓ | ✓ | GPT-4o, Whisper, TTS-1/HD |
-| `groq` | ✓ | ✓ | ✓ | Llama 4, Whisper, PlayAI/Orpheus |
-| `gemini` | ✓ | — | — | Gemini 2.5 Flash/Pro |
-| `deepgram` | — | ✓ | — | Nova-3, 30+ languages |
-| `elevenlabs` | — | — | ✓ | 32 languages, <75ms flash model |
-| `spitch` | — | ✓ | ✓ | African-accent optimised |
-| `intron` | — | ✓ | ✓ | 23 African languages, 500+ accents |
-| **`ollama`** | **✓** | — | — | **Sovereign — any GGUF model, fully offline** |
+| Provider             | Chat         | STT | TTS | Notes                                                |
+| -------------------- | ------------ | --- | --- | ---------------------------------------------------- |
+| `anthropic`        | ✓           | —  | —  | Claude Opus 4.7, Sonnet 4.6, Haiku 4.5               |
+| `openai`           | ✓           | ✓  | ✓  | GPT-4o, Whisper, TTS-1/HD                            |
+| `groq`             | ✓           | ✓  | ✓  | Llama 4, Whisper, PlayAI/Orpheus                     |
+| `gemini`           | ✓           | —  | —  | Gemini 2.5 Flash/Pro                                 |
+| `deepgram`         | —           | ✓  | —  | Nova-3, 30+ languages                                |
+| `elevenlabs`       | —           | —  | ✓  | 32 languages, <75ms flash model                      |
+| `spitch`           | —           | ✓  | ✓  | African-accent optimised                             |
+| `intron`           | —           | ✓  | ✓  | 23 African languages, 500+ accents                   |
+| **`ollama`** | **✓** | —  | —  | **Sovereign — any GGUF model, fully offline** |
 
 ---
 
