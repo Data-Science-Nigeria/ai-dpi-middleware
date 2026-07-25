@@ -1,9 +1,9 @@
 """ElevenLabs TTS model registry.
 
-eleven_multilingual_v2  — highest quality, 32 languages (recommended)
-eleven_flash_v2_5       — ultra-low latency, 32 languages
-eleven_turbo_v2_5       — low latency, 32 languages
-eleven_monolingual_v1   — English only, legacy
+eleven_multilingual_v2  – highest quality, 32 languages (recommended)
+eleven_flash_v2_5       – ultra-low latency, 32 languages
+eleven_turbo_v2_5       – low latency, 32 languages
+eleven_monolingual_v1   – English only, legacy
 """
 
 # Pre-made voice IDs (name → ElevenLabs voice_id)

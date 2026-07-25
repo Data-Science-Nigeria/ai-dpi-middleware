@@ -1,4 +1,4 @@
-"""STT provider — Intron (Sahara African-language models).
+"""STT provider – Intron (Sahara African-language models).
 
 Intron has no official Python SDK; we use httpx directly.
 API reference: https://docs.intron.africa
@@ -27,7 +27,7 @@ async def transcribe(
 
     Args:
         file_bytes:    Raw audio bytes.
-        filename:      Original filename — used as the multipart filename.
+        filename:      Original filename – used as the multipart filename.
         content_type:  MIME type of the audio file.
         model:         Intron model: sahara-v1.
         language:      Required BCP-47 code: sw, ha, yo, ig, am, so, zu, xh, af, wo, ff, en.

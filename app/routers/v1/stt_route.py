@@ -1,4 +1,4 @@
-"""STT endpoints — protected by JWT + RBAC."""
+"""STT endpoints – protected by JWT + RBAC."""
 
 from __future__ import annotations
 
@@ -159,9 +159,9 @@ Convert an audio file to text using the specified provider and model.
 **Spitch languages:** `en`, `yo`, `ha`, `ig`, `am`
 
 **Spitch-only fields**
-- `language` — **required** for Spitch (`en`, `yo`, `ha`, `ig`, `am`)
-- `special_words` — custom vocabulary hint to improve recognition
-- `timestamp` — `none` | `sentence` | `word` (only with `mansa_v1`)
+- `language` – **required** for Spitch (`en`, `yo`, `ha`, `ig`, `am`)
+- `special_words` – custom vocabulary hint to improve recognition
+- `timestamp` – `none` | `sentence` | `word` (only with `mansa_v1`)
 """,
     responses={
         200: {"description": "Transcription result"},

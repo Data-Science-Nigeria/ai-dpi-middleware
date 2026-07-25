@@ -1,4 +1,4 @@
-"""Agent endpoint — multi-step LLM reasoning with built-in DPI tools."""
+"""Agent endpoint – multi-step LLM reasoning with built-in DPI tools."""
 
 from __future__ import annotations
 
@@ -26,12 +26,12 @@ Run a multi-step AI agent that can use built-in DPI tools to complete a goal.
 
 The agent receives your messages, decides which tools to call (document search,
 translation, field extraction, HTTP requests), executes them, and iterates until
-it produces a final answer — all in one request.
+it produces a final answer – all in one request.
 
 **Tool-calling support by provider:**
-- `anthropic` — full tool-use loop (recommended)
-- `openai` / `groq` — full function-calling loop
-- `gemini` / `ollama` — single-shot (tools described in prompt, no execution loop)
+- `anthropic` – full tool-use loop (recommended)
+- `openai` / `groq` – full function-calling loop
+- `gemini` / `ollama` – single-shot (tools described in prompt, no execution loop)
 
 **Available built-in tools:** search_documents, translate_text, extract_fields, http_request
 """,

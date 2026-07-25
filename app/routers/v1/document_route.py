@@ -1,4 +1,4 @@
-"""Document ingestion endpoints — all popular knowledge formats to RAG vector store."""
+"""Document ingestion endpoints – all popular knowledge formats to RAG vector store."""
 
 from __future__ import annotations
 
@@ -67,20 +67,20 @@ def _classify(filename: str, content_type: str) -> Literal["pdf", "image", "offi
 Upload any popular knowledge format for RAG ingestion.
 
 **Supported formats**:
-- **PDF** — native text extraction; scanned pages fall back to OCR
-- **Word** — `.docx`, `.doc`
-- **PowerPoint** — `.pptx`, `.ppt` (includes slide notes)
-- **Excel / Spreadsheet** — `.xlsx`, `.xls`, `.csv`
-- **Open Document** — `.odt`
-- **Rich Text** — `.rtf`
-- **Plain text / Markdown** — `.txt`, `.md`
-- **Images** — `.png`, `.jpg`, `.jpeg`, `.tiff`, `.bmp`, `.gif`, `.webp`
+- **PDF** – native text extraction; scanned pages fall back to OCR
+- **Word** – `.docx`, `.doc`
+- **PowerPoint** – `.pptx`, `.ppt` (includes slide notes)
+- **Excel / Spreadsheet** – `.xlsx`, `.xls`, `.csv`
+- **Open Document** – `.odt`
+- **Rich Text** – `.rtf`
+- **Plain text / Markdown** – `.txt`, `.md`
+- **Images** – `.png`, `.jpg`, `.jpeg`, `.tiff`, `.bmp`, `.gif`, `.webp`
 
 **Pipeline**: extract text → sentence-aware chunking → embed → store in vector DB.
 
 **`ocr_backend`** (PDF scanned pages and images only):
-- `tesseract` *(default)* — fully local, requires Tesseract on the host.
-- `llm` — Claude or GPT-4o vision; higher quality, requires API key.
+- `tesseract` *(default)* – fully local, requires Tesseract on the host.
+- `llm` – Claude or GPT-4o vision; higher quality, requires API key.
 
 Requires **admin** role.
 """,
@@ -91,7 +91,7 @@ async def ingest_document(
     collection_name: Annotated[str | None, Form(description="Target collection (uses default if omitted)")] = None,
     ocr_backend: Annotated[
         Literal["tesseract", "llm"],
-        Form(description="OCR backend — applies to scanned PDFs and image files only"),
+        Form(description="OCR backend – applies to scanned PDFs and image files only"),
     ] = "tesseract",
     language: Annotated[str, Form(description="Tesseract language code, e.g. 'eng', 'fra', 'yor', 'swa'")] = "eng",
 ) -> IngestResponse:

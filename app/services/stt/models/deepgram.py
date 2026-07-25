@@ -1,9 +1,9 @@
 """Deepgram STT model registry.
 
-nova-3  — latest, highest accuracy, 100+ languages
-nova-2  — reliable, 30+ languages
-enhanced — enhanced accuracy, slower
-base    — fastest, lower accuracy
+nova-3  – latest, highest accuracy, 100+ languages
+nova-2  – reliable, 30+ languages
+enhanced – enhanced accuracy, slower
+base    – fastest, lower accuracy
 """
 
 PROVIDER_MODELS: dict[str, frozenset[str]] = {

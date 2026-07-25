@@ -31,7 +31,7 @@ def _body(
     return body
 
 
-# ── Happy path — each provider ────────────────────────────────────────────────
+# ── Happy path – each provider ────────────────────────────────────────────────
 
 class TestTranslateProviderRouting:
 

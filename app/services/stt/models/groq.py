@@ -1,4 +1,4 @@
-"""Groq STT model definitions — Whisper via Groq inference."""
+"""Groq STT model definitions – Whisper via Groq inference."""
 
 from typing import Literal
 

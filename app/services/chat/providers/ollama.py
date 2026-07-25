@@ -1,4 +1,4 @@
-"""Ollama chat provider — sovereign / local LLM deployment (no external API calls)."""
+"""Ollama chat provider – sovereign / local LLM deployment (no external API calls)."""
 
 from __future__ import annotations
 

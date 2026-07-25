@@ -1,4 +1,4 @@
-"""Tests for the Text-to-Speech endpoint — providers, validation, caching."""
+"""Tests for the Text-to-Speech endpoint – providers, validation, caching."""
 
 from __future__ import annotations
 

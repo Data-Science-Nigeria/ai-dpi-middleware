@@ -1,4 +1,4 @@
-"""Tests for authentication — token issuance, validation, and RBAC."""
+"""Tests for authentication – token issuance, validation, and RBAC."""
 
 from __future__ import annotations
 

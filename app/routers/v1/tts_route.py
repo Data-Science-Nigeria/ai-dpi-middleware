@@ -1,4 +1,4 @@
-"""TTS endpoints — protected by JWT + RBAC."""
+"""TTS endpoints – protected by JWT + RBAC."""
 
 from __future__ import annotations
 
@@ -58,10 +58,10 @@ Convert text to speech. Five providers, true global multilingual coverage.
 
 | Provider | Model | Languages | Notes |
 |----------|-------|-----------|-------|
-| `groq` | `playai-tts` | English | — |
-| `groq` | `playai-tts-arabic` | Arabic | — |
+| `groq` | `playai-tts` | English | – |
+| `groq` | `playai-tts-arabic` | Arabic | – |
 | `groq` | `canopylabs/orpheus-v1-english` | English | Vocal direction tags |
-| `groq` | `canopylabs/orpheus-arabic-saudi` | Arabic (Saudi) | — |
+| `groq` | `canopylabs/orpheus-arabic-saudi` | Arabic (Saudi) | – |
 | `openai` | `tts-1` | Multilingual | Fast |
 | `openai` | `tts-1-hd` | Multilingual | High quality |
 | `openai` | `gpt-4o-mini-tts` | Multilingual | Supports `instructions` |
@@ -83,7 +83,7 @@ Raw audio bytes with the appropriate `Content-Type` header.
     response_class=Response,
     responses={
         200: {"content": {_DEFAULT_MEDIA_TYPE: {}, "audio/mpeg": {}, "audio/flac": {}, "audio/aac": {}, "audio/ogg": {}, "audio/pcm": {}}, "description": "Audio file"},
-        422: {"description": "Validation error — invalid provider/model/voice combination or text too long"},
+        422: {"description": "Validation error – invalid provider/model/voice combination or text too long"},
     },
 )
 async def synthesize_endpoint(
@@ -137,11 +137,11 @@ async def synthesize_endpoint(
     "/stream",
     summary="Stream speech synthesis (chunked audio)",
     description="""
-Stream text-to-speech audio as it is generated — lower time-to-first-byte than `/synthesize`.
+Stream text-to-speech audio as it is generated – lower time-to-first-byte than `/synthesize`.
 
 **Supported providers:** `openai`, `groq`, `elevenlabs`
 
-Spitch and Intron do not expose streaming APIs — use `/synthesize` for those.
+Spitch and Intron do not expose streaming APIs – use `/synthesize` for those.
 
 Response is a chunked `audio/*` stream. Suitable for voice agents and real-time playback.
 Not cached (streaming responses are not stored in Redis).

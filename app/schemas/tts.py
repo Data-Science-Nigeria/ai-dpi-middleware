@@ -60,7 +60,7 @@ class TTSRequest(BaseModel):
         description=(
             "BCP-47 language code. "
             "Required for Spitch (en, ha, ig, yo) and Intron (sw, ha, yo, ig, am, en). "
-            "Optional for ElevenLabs — omit for auto-detection from text. "
+            "Optional for ElevenLabs – omit for auto-detection from text. "
             "Not used by Groq or OpenAI TTS."
         ),
     )
@@ -98,7 +98,7 @@ class TTSRequest(BaseModel):
             )
 
     def _validate_voice(self) -> None:
-        # 2. Voice validation — only for models with a defined voice list
+        # 2. Voice validation – only for models with a defined voice list
         if self.voice is None:
             return
         valid_voices = MODEL_VOICES.get(self.model)
@@ -135,7 +135,7 @@ class TTSRequest(BaseModel):
             )
 
     def _validate_elevenlabs_language(self) -> None:
-        # 5. ElevenLabs language validation (optional — only when provided)
+        # 5. ElevenLabs language validation (optional – only when provided)
         if self.provider == "elevenlabs" and self.language and self.language not in ELEVENLABS_LANGUAGES:
             raise ValueError(
                 f"Language '{self.language}' is not supported by ElevenLabs. "

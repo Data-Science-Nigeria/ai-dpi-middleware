@@ -1,4 +1,4 @@
-"""Groq chat model definitions — fast open-source LLM inference."""
+"""Groq chat model definitions – fast open-source LLM inference."""
 
 from typing import Literal
 

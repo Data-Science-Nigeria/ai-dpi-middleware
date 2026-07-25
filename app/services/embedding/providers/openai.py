@@ -1,4 +1,4 @@
-"""Chat provider — generic OpenAI-compatible API."""
+"""Chat provider – generic OpenAI-compatible API."""
 
 from __future__ import annotations
 

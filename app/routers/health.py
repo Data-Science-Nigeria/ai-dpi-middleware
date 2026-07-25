@@ -328,7 +328,7 @@ _HTML = """\
   <div class="grid" style="margin-top:3rem;">
     <div class="card">
       <h3>Agent Loop</h3>
-      <p>Multi-step LLM reasoning with built-in DPI tools — document search, translation, field extraction, external HTTP calls. One request, autonomous execution.</p>
+      <p>Multi-step LLM reasoning with built-in DPI tools – document search, translation, field extraction, external HTTP calls. One request, autonomous execution.</p>
     </div>
     <div class="card">
       <h3>Audit &amp; Rate Limiting</h3>
@@ -812,7 +812,7 @@ async def root():
     return HTMLResponse(content=_HTML)
 
 
-@router.get("/health", summary="Health check — dependency status")
+@router.get("/health", summary="Health check – dependency status")
 async def health():
     cfg = get_config()
     checks: dict[str, str] = {}
@@ -829,7 +829,7 @@ async def health():
     else:
         checks["redis"] = "disabled"
 
-    # Vector DB (Weaviate only — fast liveness check)
+    # Vector DB (Weaviate only – fast liveness check)
     vdb_cfg = cfg.get("llm", {}).get("vector_database", {})
     provider = vdb_cfg.get("provider", "weaviate")
     if vdb_cfg.get("type") == "http":

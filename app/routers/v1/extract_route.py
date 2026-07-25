@@ -24,16 +24,16 @@ _rl = get_config().get("llm", {}).get("rate_limit", {})
 Extract structured fields from free-form text using the LLM's native structured output.
 
 **Provider behaviour**:
-- `anthropic` — forced `tool_use`; guaranteed valid JSON
-- `openai` — `json_schema` response format; guaranteed valid JSON
-- `groq` — `json_object` mode + schema in system prompt
-- `gemini` — `application/json` mime type + schema in prompt
-- `ollama` — `format=json` + schema in system prompt (sovereign, no API key)
+- `anthropic` – forced `tool_use`; guaranteed valid JSON
+- `openai` – `json_schema` response format; guaranteed valid JSON
+- `groq` – `json_object` mode + schema in system prompt
+- `gemini` – `application/json` mime type + schema in prompt
+- `ollama` – `format=json` + schema in system prompt (sovereign, no API key)
 
 Output is validated against the supplied JSON Schema. If validation fails and
 `max_retries > 0`, the error is fed back to the LLM for a corrected attempt.
 
-**Example** — extract person fields:
+**Example** – extract person fields:
 ```json
 {
   "text": "Full name: Amina Kofi. Date of birth: 1990-03-15. ID: GH-12345.",

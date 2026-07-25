@@ -1,4 +1,4 @@
-"""STT provider — Groq Whisper API."""
+"""STT provider – Groq Whisper API."""
 
 from __future__ import annotations
 

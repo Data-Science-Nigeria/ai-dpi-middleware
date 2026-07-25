@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from app.config import get_config
 
-# Intron has no official Python SDK — all calls go through httpx.
+# Intron has no official Python SDK – all calls go through httpx.
 # This module centralises config access so service providers don't import get_config directly.
 
 def get_api_key() -> str:

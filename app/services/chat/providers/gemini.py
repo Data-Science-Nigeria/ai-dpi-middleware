@@ -1,4 +1,4 @@
-"""Chat provider — Google Gemini via google-genai SDK."""
+"""Chat provider – Google Gemini via google-genai SDK."""
 
 from __future__ import annotations
 

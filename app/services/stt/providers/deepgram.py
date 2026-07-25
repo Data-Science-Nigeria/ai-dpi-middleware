@@ -1,4 +1,4 @@
-"""STT provider — Deepgram.
+"""STT provider – Deepgram.
 
 Uses the Deepgram v7 SDK pre-recorded transcription API.
 nova-3 supports 100+ languages with automatic language detection.

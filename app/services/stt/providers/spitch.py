@@ -1,4 +1,4 @@
-"""STT provider — Spitch transcription API."""
+"""STT provider – Spitch transcription API."""
 
 from __future__ import annotations
 

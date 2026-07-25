@@ -1,4 +1,4 @@
-"""Vector DB provider — Qdrant (open-source + managed cloud).
+"""Vector DB provider – Qdrant (open-source + managed cloud).
 
 Supports self-hosted Docker (http) and Qdrant Cloud (https + api_key).
 Uses qdrant-client v1.12+ with async operations via run_in_executor.

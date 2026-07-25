@@ -1,4 +1,4 @@
-"""Chat provider — Anthropic Messages API."""
+"""Chat provider – Anthropic Messages API."""
 
 from __future__ import annotations
 

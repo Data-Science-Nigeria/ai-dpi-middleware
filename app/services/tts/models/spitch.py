@@ -1,4 +1,4 @@
-"""Spitch TTS model definitions — 40 African-language voices."""
+"""Spitch TTS model definitions – 40 African-language voices."""
 
 from typing import Literal
 
@@ -25,7 +25,7 @@ PROVIDER_MODELS: dict[str, frozenset[str]] = {
     "spitch": frozenset(SpitchTTSModel.__args__),  # type: ignore[attr-defined]
 }
 
-# Voice validation is skipped for Spitch — 40 voices exist; see docs.spitch.app/concepts/voices
+# Voice validation is skipped for Spitch – 40 voices exist; see docs.spitch.app/concepts/voices
 MODEL_VOICES: dict[str, frozenset[str]] = {}
 
 DEFAULT_VOICE: dict[str, str] = {}

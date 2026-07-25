@@ -7,6 +7,7 @@ __pycache__/
 dist/
 .coverage
 sonar-project.properties
+.claude/
 
 logs/
 

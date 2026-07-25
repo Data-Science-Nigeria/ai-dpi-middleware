@@ -58,7 +58,7 @@ def stream_synthesize(
 ) -> AsyncIterator[bytes]:
     """Stream audio chunks. Supported providers: openai, groq, elevenlabs.
 
-    Spitch and Intron do not support streaming — raises ValueError if requested.
+    Spitch and Intron do not support streaming – raises ValueError if requested.
     """
     if provider not in _STREAMING_PROVIDERS:
         raise ValueError(

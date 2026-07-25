@@ -1,4 +1,4 @@
-"""TTS provider — Groq audio API (Orpheus + PlayAI)."""
+"""TTS provider – Groq audio API (Orpheus + PlayAI)."""
 
 from __future__ import annotations
 

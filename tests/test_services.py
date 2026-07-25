@@ -1,4 +1,4 @@
-"""Service-layer unit tests — chat, STT, TTS, vectordb dispatchers."""
+"""Service-layer unit tests – chat, STT, TTS, vectordb dispatchers."""
 
 from __future__ import annotations
 

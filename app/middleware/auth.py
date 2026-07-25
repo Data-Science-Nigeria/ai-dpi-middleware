@@ -56,7 +56,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return _unauthorized("Missing authentication token")
 
         try:
-            # Re-use your existing dependency directly — no duplicated logic.
+            # Re-use your existing dependency directly – no duplicated logic.
             # get_current_user accepts the bearer token string (same value FastAPI
             # would inject via OAuth2PasswordBearer).
             claims: dict = await get_current_user(raw_token)

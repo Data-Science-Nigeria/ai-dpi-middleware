@@ -39,7 +39,7 @@ async def extract_text_from_pdf(
         if len(native_text) > 50:
             pages.append({"page": page_num + 1, "text": native_text, "method": "native"})
         else:
-            # Scanned page — render to image and OCR
+            # Scanned page – render to image and OCR
             mat = fitz.Matrix(2.0, 2.0)  # 2× zoom improves OCR accuracy
             pix = page.get_pixmap(matrix=mat)
             img_bytes = pix.tobytes("png")

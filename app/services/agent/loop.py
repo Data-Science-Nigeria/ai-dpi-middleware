@@ -1,4 +1,4 @@
-"""Agentic loop — LLM reasons, calls tools, observes results, repeats until done.
+"""Agentic loop – LLM reasons, calls tools, observes results, repeats until done.
 
 Supports Anthropic (tool_use) and OpenAI-compatible providers (function calling).
 Groq uses OpenAI-compatible function calling.
@@ -96,7 +96,7 @@ async def _run_anthropic(
         text_blocks = [b for b in response.content if b.type == "text"]
 
         if not tool_calls:
-            # Done — return final text
+            # Done – return final text
             return "\n".join(b.text for b in text_blocks if b.text), trace
 
         # Append assistant message
@@ -218,7 +218,7 @@ async def _run_fallback(
     provider: str,
     tools: list[Tool],
 ) -> tuple[str, list[dict]]:
-    """Single-shot — no tool loop. Describe available tools in system prompt."""
+    """Single-shot – no tool loop. Describe available tools in system prompt."""
     from app.services.chat import main as chat_service
 
     tool_descriptions = "\n".join(

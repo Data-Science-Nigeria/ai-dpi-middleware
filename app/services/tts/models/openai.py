@@ -9,7 +9,7 @@ from typing import Literal
 OpenAITTSModel = Literal[
     "tts-1",           # Fast, lower latency
     "tts-1-hd",        # Higher quality
-    "gpt-4o-mini-tts", # Latest — supports `instructions` field
+    "gpt-4o-mini-tts", # Latest – supports `instructions` field
 ]
 
 # ---------------------------------------------------------------------------

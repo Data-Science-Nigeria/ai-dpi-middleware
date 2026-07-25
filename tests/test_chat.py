@@ -1,4 +1,4 @@
-"""Tests for the LLM chat endpoint — provider routing, validation, streaming."""
+"""Tests for the LLM chat endpoint – provider routing, validation, streaming."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def _chat_body(
     return body
 
 
-# ── Happy path — each provider ────────────────────────────────────────────────
+# ── Happy path – each provider ────────────────────────────────────────────────
 
 class TestChatProviderRouting:
     """Each provider is mocked; embedding/vectordb are stubbed by conftest."""

@@ -1,4 +1,4 @@
-"""Translation endpoint — LLM-backed, model-agnostic."""
+"""Translation endpoint – LLM-backed, model-agnostic."""
 
 from __future__ import annotations
 

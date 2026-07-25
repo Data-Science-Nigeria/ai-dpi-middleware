@@ -1,4 +1,4 @@
-"""Vector DB provider — Weaviate (open-source / managed).
+"""Vector DB provider – Weaviate (open-source / managed).
 
 Supports local Docker (http), Weaviate Cloud (wcs), and embedded modes.
 Uses the v4 Python client with async support.

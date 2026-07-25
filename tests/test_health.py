@@ -16,7 +16,7 @@ class TestHealthEndpoints:
         assert "version" in body
 
     async def test_health_no_auth_required(self, client: AsyncClient):
-        # No Authorization header — should still return 200
+        # No Authorization header – should still return 200
         resp = await client.get("/health")
         assert resp.status_code == 200
 

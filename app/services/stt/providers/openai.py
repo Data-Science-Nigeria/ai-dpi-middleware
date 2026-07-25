@@ -1,4 +1,4 @@
-"""STT provider — OpenAI Whisper / GPT-4o transcription API."""
+"""STT provider – OpenAI Whisper / GPT-4o transcription API."""
 
 from __future__ import annotations
 

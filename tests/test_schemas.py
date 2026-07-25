@@ -1,4 +1,4 @@
-"""Pydantic schema validation — unit tests with no HTTP layer."""
+"""Pydantic schema validation – unit tests with no HTTP layer."""
 
 from __future__ import annotations
 

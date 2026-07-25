@@ -1,4 +1,4 @@
-"""TTS provider — ElevenLabs.
+"""TTS provider – ElevenLabs.
 
 Supports 32 languages with eleven_multilingual_v2 and flash/turbo variants.
 """

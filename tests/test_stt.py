@@ -1,4 +1,4 @@
-"""Tests for the Speech-to-Text endpoint — all providers, validation, caching."""
+"""Tests for the Speech-to-Text endpoint – all providers, validation, caching."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _stt_form(
     return data
 
 
-# ── Provider routing — happy path ─────────────────────────────────────────────
+# ── Provider routing – happy path ─────────────────────────────────────────────
 
 class TestSTTProviderRouting:
 
@@ -225,7 +225,7 @@ class TestSTTFileValidation:
         assert "type" in resp.json()["detail"].lower() or "allowed" in resp.json()["detail"].lower()
 
     async def test_spitch_rejects_wav_extension(self, user_client: AsyncClient, tiny_wav: bytes):
-        # Spitch only accepts .mp3 .wav .m4a .ogg — WAV is actually allowed; test a rejected one
+        # Spitch only accepts .mp3 .wav .m4a .ogg – WAV is actually allowed; test a rejected one
         resp = await user_client.post(
             STT_URL,
             data={"provider": "spitch", "language": "en"},
@@ -279,7 +279,7 @@ class TestSTTCaching:
     ):
         mock_result = _MOCK_RESULT.copy()
         with patch("app.services.stt.providers.groq.transcribe", new_callable=AsyncMock, return_value=mock_result) as mock_fn:
-            # First call — cache miss
+            # First call – cache miss
             await user_client.post(
                 STT_URL,
                 data={"provider": "groq", "model": "whisper-large-v3-turbo"},
@@ -287,7 +287,7 @@ class TestSTTCaching:
             )
             assert mock_fn.call_count == 1
 
-            # Second call — should hit cache, not call provider
+            # Second call – should hit cache, not call provider
             await user_client.post(
                 STT_URL,
                 data={"provider": "groq", "model": "whisper-large-v3-turbo"},

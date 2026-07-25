@@ -1,4 +1,4 @@
-"""Groq TTS model definitions — Orpheus by Canopy Labs + PlayAI."""
+"""Groq TTS model definitions – Orpheus by Canopy Labs + PlayAI."""
 
 from typing import Literal, get_args
 
@@ -22,7 +22,7 @@ OrpheusModel = Literal[
 # four model-ID strings, without re-listing them here.
 GroqTTSModel = Literal[PlayAIModel, OrpheusModel]
 
-# Canonical Orpheus model IDs — reused by every runtime lookup table below so
+# Canonical Orpheus model IDs – reused by every runtime lookup table below so
 # the strings are not duplicated. (PEP 586 forbids variables inside Literal[...],
 # so the OrpheusModel definition above keeps the only other literal copies.)
 ORPHEUS_V1_ENGLISH = "canopylabs/orpheus-v1-english"

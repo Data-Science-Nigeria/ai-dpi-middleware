@@ -1,4 +1,4 @@
-"""AI chat endpoints — protected by JWT + RBAC."""
+"""AI chat endpoints – protected by JWT + RBAC."""
 
 from __future__ import annotations
 

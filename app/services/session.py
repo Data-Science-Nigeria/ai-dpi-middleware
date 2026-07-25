@@ -1,4 +1,4 @@
-"""Session service — Redis-backed per-session conversation history."""
+"""Session service – Redis-backed per-session conversation history."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ async def append(session_id: str, role: str, content: str) -> None:
     try:
         client = get_client()
     except RuntimeError:
-        return  # Redis disabled — session history silently skipped
+        return  # Redis disabled – session history silently skipped
 
     key = _key(session_id)
     msg = json.dumps({"role": role, "content": content})

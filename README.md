@@ -2,7 +2,7 @@
 
 > **Developed and maintained by [Data Science Nigeria](https://datasciencenigeria.org)**
 
-An open, model-agnostic AI middleware layer for **Digital Public Infrastructure (DPI)**. Delivers LLM chat, RAG document intelligence, speech, translation, and structured extraction through a single secure FastAPI gateway — with plug-and-play provider switching and no vendor lock-in.
+An open, model-agnostic AI middleware layer for **Digital Public Infrastructure (DPI)**. Delivers LLM chat, RAG document intelligence, speech, translation, and structured extraction through a single secure FastAPI gateway – with plug-and-play provider switching and no vendor lock-in.
 
 ---
 
@@ -11,7 +11,7 @@ An open, model-agnostic AI middleware layer for **Digital Public Infrastructure 
 | Capability                        | Providers                                                                               |
 | --------------------------------- | --------------------------------------------------------------------------------------- |
 | **LLM Chat + Streaming**    | Anthropic, OpenAI, Groq, Gemini, Generic OpenAI-compatible,**Ollama (sovereign)** |
-| **RAG Ingestion**           | PDF, DOCX, PPTX, XLSX, CSV, RTF, ODT, TXT, MD — OCR for scanned docs                   |
+| **RAG Ingestion**           | PDF, DOCX, PPTX, XLSX, CSV, RTF, ODT, TXT, MD – OCR for scanned docs                   |
 | **Structured Extraction**   | JSON Schema-constrained field extraction, provider-native structured output             |
 | **Translation**             | LLM-backed, 100+ languages including African low-resource languages                     |
 | **Speech-to-Text**          | Groq Whisper, OpenAI Whisper, Deepgram Nova-3, Spitch, Intron Sahara                    |
@@ -20,7 +20,7 @@ An open, model-agnostic AI middleware layer for **Digital Public Infrastructure 
 | **Vector DB**               | Weaviate (open-source), Qdrant (open-source), Pinecone (managed)                        |
 | **Auth**                    | Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), Token Introspection      |
 | **Session History**         | Redis-backed multi-turn conversation history with configurable TTL                      |
-| **Caching + Rate Limiting** | Redis — per-role limits on every endpoint                                              |
+| **Caching + Rate Limiting** | Redis – per-role limits on every endpoint                                              |
 | **Audit**                   | Structured JSON audit log with trace IDs on all requests                                |
 
 ---
@@ -43,7 +43,7 @@ cd ai-dpi-middleware
 
 Edit `app/default_config.yaml`. Replace every `[PLACEHOLDER]` with real values.
 
-**Minimum — auth:**
+**Minimum – auth:**
 
 ```yaml
 auth:
@@ -77,10 +77,10 @@ llm:
 ### 3. Run
 
 ```bash
-# Dev (cloud providers) — starts api + redis only
+# Dev (cloud providers) – starts api + redis only
 docker compose up -d
 
-# Sovereign (local models) — adds Weaviate + Ollama
+# Sovereign (local models) – adds Weaviate + Ollama
 docker compose --profile sovereign up -d
 
 docker compose logs -f api
@@ -108,7 +108,7 @@ Browse interactive docs at `http://localhost:8000/docs`.
 
 ## Sovereign Deployment (Fully Offline)
 
-Run with zero external API calls — no vendor keys, no data leaving the host.
+Run with zero external API calls – no vendor keys, no data leaving the host.
 
 ### Stack
 
@@ -145,7 +145,7 @@ Then pull a model and start:
 ```bash
 docker compose --profile sovereign up -d
 
-# Pull a model (first time only — ~2 GB)
+# Pull a model (first time only – ~2 GB)
 docker compose exec ollama ollama pull qwen2.5:0.5b
 
 # Chat
@@ -194,7 +194,7 @@ Pull any with `ollama pull <model>`.
 
 ---
 
-## RAG — Document Ingestion
+## RAG – Document Ingestion
 
 ```bash
 # Ingest a PDF (Tesseract OCR for scanned pages)
@@ -219,7 +219,7 @@ curl -X POST http://localhost:8000/api/v1/documents/ingest/text \
 
 **OCR backends:** `tesseract` (local, sovereign) · `llm` (Claude/GPT-4o vision, higher quality)
 
-Chat automatically retrieves relevant context from stored documents — no extra configuration needed.
+Chat automatically retrieves relevant context from stored documents – no extra configuration needed.
 
 ---
 
@@ -258,7 +258,7 @@ Pass `session_id` in any chat request to maintain conversation history across ca
 # Turn 1
 curl ... -d '{"session_id":"user-123","messages":[{"role":"user","content":"What is DPI?"}],...}'
 
-# Turn 2 — prior context prepended automatically
+# Turn 2 – prior context prepended automatically
 curl ... -d '{"session_id":"user-123","messages":[{"role":"user","content":"Give an example."}],...}'
 ```
 
@@ -328,15 +328,15 @@ Roles read from: `roles` claim, `realm_access.roles` (Keycloak), or `resource_ac
 
 | Provider             | Chat         | STT | TTS | Notes                                                |
 | -------------------- | ------------ | --- | --- | ---------------------------------------------------- |
-| `anthropic`        | ✓           | —  | —  | Claude Opus 4.7, Sonnet 4.6, Haiku 4.5               |
+| `anthropic`        | ✓           | –  | –  | Claude Opus 4.7, Sonnet 4.6, Haiku 4.5               |
 | `openai`           | ✓           | ✓  | ✓  | GPT-4o, Whisper, TTS-1/HD                            |
 | `groq`             | ✓           | ✓  | ✓  | Llama 4, Whisper, PlayAI/Orpheus                     |
-| `gemini`           | ✓           | —  | —  | Gemini 2.5 Flash/Pro                                 |
-| `deepgram`         | —           | ✓  | —  | Nova-3, 30+ languages                                |
-| `elevenlabs`       | —           | —  | ✓  | 32 languages, <75ms flash model                      |
-| `spitch`           | —           | ✓  | ✓  | African-accent optimised                             |
-| `intron`           | —           | ✓  | ✓  | 23 African languages, 500+ accents                   |
-| **`ollama`** | **✓** | —  | —  | **Sovereign — any GGUF model, fully offline** |
+| `gemini`           | ✓           | –  | –  | Gemini 2.5 Flash/Pro                                 |
+| `deepgram`         | –           | ✓  | –  | Nova-3, 30+ languages                                |
+| `elevenlabs`       | –           | –  | ✓  | 32 languages, <75ms flash model                      |
+| `spitch`           | –           | ✓  | ✓  | African-accent optimised                             |
+| `intron`           | –           | ✓  | ✓  | 23 African languages, 500+ accents                   |
+| **`ollama`** | **✓** | –  | –  | **Sovereign – any GGUF model, fully offline** |
 
 ---
 
@@ -352,7 +352,7 @@ uv run ruff check .
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT – see [LICENSE](LICENSE).
 
 ---
 

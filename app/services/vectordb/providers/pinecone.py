@@ -1,4 +1,4 @@
-"""Vector DB provider — Pinecone (managed/serverless).
+"""Vector DB provider – Pinecone (managed/serverless).
 
 Uses the Pinecone Python SDK v5+. Requires a pre-created index; the index
 must have a dimension matching the embedding model output.

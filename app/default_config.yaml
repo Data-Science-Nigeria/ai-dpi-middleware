@@ -75,7 +75,7 @@ llm:
         temperature: 0.9
         top_p: 0.95
 
-    # Sovereign / local — no external API calls
+    # Sovereign / local – no external API calls
     ollama:
       base_url: "http://ollama:11434"  # use http://localhost:11434 for bare-metal
       default_model: "qwen2.5:0.5b"        # any model pulled via `ollama pull <model>`
@@ -85,13 +85,13 @@ llm:
         top_p: 0.95
 
   vector_database:
-    # "weaviate" — self-hosted Docker (sovereign) or Weaviate Cloud
-    # "qdrant"   — self-hosted Docker (sovereign) or Qdrant Cloud
-    # "pinecone" — managed cloud only
+    # "weaviate" – self-hosted Docker (sovereign) or Weaviate Cloud
+    # "qdrant"   – self-hosted Docker (sovereign) or Qdrant Cloud
+    # "pinecone" – managed cloud only
     provider: "weaviate"
 
     # weaviate/qdrant: "http" (local Docker) | "cloud" | "embedded"/"memory"
-    # pinecone: always cloud — only API_KEY required
+    # pinecone: always cloud – only API_KEY required
     type: "http"
 
     http_host: "weaviate"   # Docker service name; use "localhost" for bare-metal
@@ -105,8 +105,8 @@ llm:
     collection_name: "default_collection"
 
   embedding_model:
-    # "openai" — requires API key, uses text-embedding-3-small
-    # "local"  — sovereign, sentence-transformers on-device (no API key)
+    # "openai" – requires API key, uses text-embedding-3-small
+    # "local"  – sovereign, sentence-transformers on-device (no API key)
     #   local model options: "all-MiniLM-L6-v2" (fast, 384-dim)
     #                        "all-mpnet-base-v2" (accurate, 768-dim)
     #                        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" (African langs)
@@ -185,8 +185,8 @@ document:
   min_paragraph_length: 50     # shorter sentences discarded as noise
 
   ocr:
-    # "tesseract" — fully local, requires Tesseract binary on the host
-    # "llm"       — Claude or GPT-4o vision; higher quality, requires API key
+    # "tesseract" – fully local, requires Tesseract binary on the host
+    # "llm"       – Claude or GPT-4o vision; higher quality, requires API key
     default_backend: "tesseract"
     tesseract_cmd: null         # override Tesseract binary path if not on PATH
     llm_provider: "anthropic"   # used when backend = "llm"

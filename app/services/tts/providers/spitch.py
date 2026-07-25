@@ -1,4 +1,4 @@
-"""TTS provider — Spitch speech generation API."""
+"""TTS provider – Spitch speech generation API."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ async def synthesize(
         text:            Text to synthesize.
         voice:           Voice ID (see docs.spitch.app/concepts/voices for full list).
         language:        Required language code: en, ha, ig, yo.
-        model:           TTS model — currently only ``legacy``.
+        model:           TTS model – currently only ``legacy``.
         response_format: Audio format: wav, mp3, ogg_opus, webm_opus, flac, pcm_s16le, mulaw, alaw.
     """
     if language not in SPITCH_TTS_LANGUAGES:

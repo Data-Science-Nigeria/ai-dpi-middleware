@@ -1,4 +1,4 @@
-"""TTS provider — OpenAI audio API."""
+"""TTS provider – OpenAI audio API."""
 
 from __future__ import annotations
 
@@ -93,7 +93,7 @@ async def stream_synthesize(
     client = get_client()
     loop = asyncio.get_event_loop()
 
-    # iter_bytes() is synchronous — run in executor, yield chunks to async caller
+    # iter_bytes() is synchronous – run in executor, yield chunks to async caller
     import queue, threading
 
     q: queue.Queue = queue.Queue()

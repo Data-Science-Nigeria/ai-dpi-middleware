@@ -18,7 +18,7 @@ class ChatRequest(BaseModel):
         description=(
             "Optional session ID for multi-turn conversation history. "
             "When provided and Redis is enabled, prior turns are prepended automatically. "
-            "Any non-empty string is valid — use a UUID or a user/thread identifier."
+            "Any non-empty string is valid – use a UUID or a user/thread identifier."
         ),
     )
     messages: list[Message] = Field(..., min_length=1)

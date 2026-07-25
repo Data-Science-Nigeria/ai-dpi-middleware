@@ -1,4 +1,4 @@
-"""TTS provider — Intron (Sahara African-language models).
+"""TTS provider – Intron (Sahara African-language models).
 
 Intron has no official Python SDK; we use httpx directly.
 API reference: https://docs.intron.africa
