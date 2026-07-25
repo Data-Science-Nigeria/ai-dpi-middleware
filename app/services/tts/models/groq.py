@@ -1,6 +1,6 @@
 """Groq TTS model definitions — Orpheus by Canopy Labs + PlayAI."""
 
-from typing import Literal
+from typing import Literal, get_args
 
 # ---------------------------------------------------------------------------
 # Models
@@ -18,12 +18,15 @@ OrpheusModel = Literal[
     "canopylabs/orpheus-arabic-saudi",
 ]
 
-GroqTTSModel = Literal[
-    "playai-tts",
-    "playai-tts-arabic",
-    "canopylabs/orpheus-v1-english",
-    "canopylabs/orpheus-arabic-saudi",
-]
+# Nested Literals flatten (PEP 586): GroqTTSModel.__args__ still yields the
+# four model-ID strings, without re-listing them here.
+GroqTTSModel = Literal[PlayAIModel, OrpheusModel]
+
+# Canonical Orpheus model IDs — reused by every runtime lookup table below so
+# the strings are not duplicated. (PEP 586 forbids variables inside Literal[...],
+# so the OrpheusModel definition above keeps the only other literal copies.)
+ORPHEUS_V1_ENGLISH = "canopylabs/orpheus-v1-english"
+ORPHEUS_ARABIC_SAUDI = "canopylabs/orpheus-arabic-saudi"
 
 # ---------------------------------------------------------------------------
 # Voices
@@ -64,13 +67,10 @@ ORPHEUS_MAX_CHARS = 200
 
 # Orpheus models that support vocal-direction tags (English only)
 ORPHEUS_VOCAL_DIRECTION_MODELS: frozenset[str] = frozenset({
-    "canopylabs/orpheus-v1-english",
+    ORPHEUS_V1_ENGLISH,
 })
 
-ORPHEUS_MODELS: frozenset[str] = frozenset({
-    "canopylabs/orpheus-v1-english",
-    "canopylabs/orpheus-arabic-saudi",
-})
+ORPHEUS_MODELS: frozenset[str] = frozenset(get_args(OrpheusModel))
 
 # ---------------------------------------------------------------------------
 # Vocal directions (English model only)
@@ -113,8 +113,8 @@ VOCAL_DIRECTIONS: list[str] = list(VocalDirection.__args__)  # type: ignore[attr
 DEFAULT_VOICE: dict[str, str] = {
     "playai-tts": "Tara",
     "playai-tts-arabic": "Noura",
-    "canopylabs/orpheus-v1-english": "Tara",
-    "canopylabs/orpheus-arabic-saudi": "Noura",
+    ORPHEUS_V1_ENGLISH: "Tara",
+    ORPHEUS_ARABIC_SAUDI: "Noura",
 }
 
 # ---------------------------------------------------------------------------
@@ -128,8 +128,8 @@ PROVIDER_MODELS: dict[str, frozenset[str]] = {
 
 # Model → set of valid voice IDs (case-insensitive keys stored as-is)
 MODEL_VOICES: dict[str, frozenset[str]] = {
-    "playai-tts":                    frozenset(PlayAIVoice.__args__),          # type: ignore[attr-defined]
-    "playai-tts-arabic":             frozenset(PlayAIVoice.__args__),          # type: ignore[attr-defined]
-    "canopylabs/orpheus-v1-english": frozenset(OrpheusEnglishVoice.__args__),  # type: ignore[attr-defined]
-    "canopylabs/orpheus-arabic-saudi": frozenset(OrpheusArabicVoice.__args__), # type: ignore[attr-defined]
+    "playai-tts":         frozenset(PlayAIVoice.__args__),          # type: ignore[attr-defined]
+    "playai-tts-arabic":  frozenset(PlayAIVoice.__args__),          # type: ignore[attr-defined]
+    ORPHEUS_V1_ENGLISH:   frozenset(OrpheusEnglishVoice.__args__),  # type: ignore[attr-defined]
+    ORPHEUS_ARABIC_SAUDI: frozenset(OrpheusArabicVoice.__args__),   # type: ignore[attr-defined]
 }

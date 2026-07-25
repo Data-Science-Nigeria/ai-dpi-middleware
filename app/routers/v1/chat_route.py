@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
@@ -22,10 +24,10 @@ _rl = _cfg.get("llm", {}).get("rate_limit", {})
 
 # ── Chat ──────────────────────────────────────────────────────────────────────
 
-@router.post("", response_model=ChatResponse)
+@router.post("")
 async def chat(
     body: ChatRequest,
-    _user: dict = Depends(rate_limit(part="chat", user_limit=_rl["user"], admin_limit=_rl["admin"])),
+    _user: Annotated[dict, Depends(rate_limit(part="chat", user_limit=_rl["user"], admin_limit=_rl["admin"]))],
 ) -> ChatResponse:
     # Build message list: history (if session) + new messages
     new_msgs = [m.model_dump() for m in body.messages]
@@ -68,7 +70,7 @@ async def chat(
 @router.post("/stream")
 async def chat_stream(
     body: ChatRequest,
-    _user: dict = Depends(require_roles("admin")),
+    _user: Annotated[dict, Depends(require_roles("admin"))],
 ) -> StreamingResponse:
     new_msgs = [m.model_dump() for m in body.messages]
     if body.session_id:
@@ -108,7 +110,7 @@ async def chat_stream(
 )
 async def get_session(
     session_id: str,
-    _user: dict = Depends(require_roles("admin")),
+    _user: Annotated[dict, Depends(require_roles("admin"))],
 ) -> dict:
     history = await session_service.get_history(session_id)
     return {"session_id": session_id, "messages": history, "count": len(history)}
@@ -121,7 +123,7 @@ async def get_session(
 )
 async def delete_session(
     session_id: str,
-    _user: dict = Depends(require_roles("admin")),
+    _user: Annotated[dict, Depends(require_roles("admin"))],
 ) -> dict:
     deleted = await session_service.clear(session_id)
     if not deleted:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from app.config import get_config
@@ -26,7 +28,6 @@ def _build_prompt(text: str, source: str | None, target: str) -> str:
 
 @router.post(
     "",
-    response_model=TranslateResponse,
     summary="Translate text",
     description="""
 Translate text between any languages using any configured LLM provider.
@@ -42,7 +43,7 @@ Igbo, Swahili, Amharic, etc.) use Claude or Gemini for best results.
 )
 async def translate(
     body: TranslateRequest,
-    _user: dict = Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60))),
+    _user: Annotated[dict, Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60)))],
 ) -> TranslateResponse:
     model = body.model or DEFAULT_MODEL.get(body.provider, "")
 

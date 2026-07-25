@@ -5,6 +5,8 @@ __pycache__/
 *.pyo
 .pytest_cache/
 dist/
+.coverage
+sonar-project.properties
 
 logs/
 
@@ -15,3 +17,8 @@ data/
 .codacy/
 .github/
 proposal.docx
+
+# SonarQube scan artifacts
+coverage.xml
+pytest-report.xml
+.scannerwork/

@@ -80,6 +80,15 @@ class TTSRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_provider_model_voice(self) -> TTSRequest:
+        self._validate_model_supported()
+        self._validate_voice()
+        self._validate_spitch()
+        self._validate_intron()
+        self._validate_elevenlabs_language()
+        self._validate_instructions()
+        return self
+
+    def _validate_model_supported(self) -> None:
         # 1. Provider must support the requested model
         supported_models = PROVIDER_MODELS.get(self.provider, frozenset())
         if self.model not in supported_models:
@@ -88,37 +97,44 @@ class TTSRequest(BaseModel):
                 f"Supported models: {sorted(supported_models)}."
             )
 
+    def _validate_voice(self) -> None:
         # 2. Voice validation — only for models with a defined voice list
-        if self.voice is not None:
-            valid_voices = MODEL_VOICES.get(self.model)
-            if valid_voices is not None and self.voice not in valid_voices:
-                raise ValueError(
-                    f"Voice '{self.voice}' is not valid for model '{self.model}'. "
-                    f"Valid voices: {sorted(valid_voices)}."
-                )
+        if self.voice is None:
+            return
+        valid_voices = MODEL_VOICES.get(self.model)
+        if valid_voices is not None and self.voice not in valid_voices:
+            raise ValueError(
+                f"Voice '{self.voice}' is not valid for model '{self.model}'. "
+                f"Valid voices: {sorted(valid_voices)}."
+            )
 
+    def _validate_spitch(self) -> None:
         # 3. Spitch rules
-        if self.provider == "spitch":
-            if not self.voice:
-                raise ValueError("Spitch TTS requires a `voice`. See docs.spitch.app/concepts/voices.")
-            if not self.language:
-                raise ValueError(f"Spitch TTS requires a `language`. Supported: {sorted(SPITCH_TTS_LANGUAGES)}.")
-            if self.language not in SPITCH_TTS_LANGUAGES:
-                raise ValueError(
-                    f"Language '{self.language}' is not supported by Spitch TTS. "
-                    f"Supported: {sorted(SPITCH_TTS_LANGUAGES)}."
-                )
+        if self.provider != "spitch":
+            return
+        if not self.voice:
+            raise ValueError("Spitch TTS requires a `voice`. See docs.spitch.app/concepts/voices.")
+        if not self.language:
+            raise ValueError(f"Spitch TTS requires a `language`. Supported: {sorted(SPITCH_TTS_LANGUAGES)}.")
+        if self.language not in SPITCH_TTS_LANGUAGES:
+            raise ValueError(
+                f"Language '{self.language}' is not supported by Spitch TTS. "
+                f"Supported: {sorted(SPITCH_TTS_LANGUAGES)}."
+            )
 
+    def _validate_intron(self) -> None:
         # 4. Intron rules
-        if self.provider == "intron":
-            if not self.language:
-                raise ValueError(f"Intron TTS requires a `language`. Supported: {sorted(INTRON_TTS_LANGUAGES)}.")
-            if self.language not in INTRON_TTS_LANGUAGES:
-                raise ValueError(
-                    f"Language '{self.language}' is not supported by Intron TTS. "
-                    f"Supported: {sorted(INTRON_TTS_LANGUAGES)}."
-                )
+        if self.provider != "intron":
+            return
+        if not self.language:
+            raise ValueError(f"Intron TTS requires a `language`. Supported: {sorted(INTRON_TTS_LANGUAGES)}.")
+        if self.language not in INTRON_TTS_LANGUAGES:
+            raise ValueError(
+                f"Language '{self.language}' is not supported by Intron TTS. "
+                f"Supported: {sorted(INTRON_TTS_LANGUAGES)}."
+            )
 
+    def _validate_elevenlabs_language(self) -> None:
         # 5. ElevenLabs language validation (optional — only when provided)
         if self.provider == "elevenlabs" and self.language and self.language not in ELEVENLABS_LANGUAGES:
             raise ValueError(
@@ -126,8 +142,7 @@ class TTSRequest(BaseModel):
                 f"Supported: {sorted(ELEVENLABS_LANGUAGES)}."
             )
 
+    def _validate_instructions(self) -> None:
         # 6. `instructions` is OpenAI gpt-4o-mini-tts only
         if self.instructions is not None and self.model not in OPENAI_INSTRUCTIONS_MODELS:
             raise ValueError(f"`instructions` is only supported by {sorted(OPENAI_INSTRUCTIONS_MODELS)}.")
-
-        return self

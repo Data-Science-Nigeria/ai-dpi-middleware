@@ -10,6 +10,52 @@ from __future__ import annotations
 
 # ── DOCX ─────────────────────────────────────────────────────────────────────
 
+class _CharPager:
+    """Accumulate text fragments and emit a "page" every ``page_chars`` chars.
+
+    Mirrors the buffering the DOCX extractor previously did inline: fragments
+    are joined with newlines, and whenever the buffered length reaches the
+    threshold a page is flushed with an incrementing page number.
+    """
+
+    def __init__(self, page_chars: int):
+        self.page_chars = page_chars
+        self.pages: list[dict] = []
+        self.buf: list[str] = []
+        self.buf_len = 0
+        self.page_num = 1
+
+    def add(self, text: str) -> None:
+        self.buf.append(text)
+        self.buf_len += len(text)
+        if self.buf_len >= self.page_chars:
+            self.flush()
+
+    def flush(self) -> None:
+        text = "\n".join(self.buf).strip()
+        if text:
+            self.pages.append({"page": self.page_num, "text": text, "method": "native"})
+            self.page_num += 1
+        self.buf = []
+        self.buf_len = 0
+
+
+def _add_docx_paragraphs(doc, pager: _CharPager) -> None:
+    for para in doc.paragraphs:
+        t = para.text.strip()
+        if not t:
+            continue
+        pager.add(t)
+
+
+def _add_docx_tables(doc, pager: _CharPager) -> None:
+    for table in doc.tables:
+        for row in table.rows:
+            row_text = " | ".join(c.text.strip() for c in row.cells if c.text.strip())
+            if row_text:
+                pager.add(row_text)
+
+
 def extract_docx(file_bytes: bytes) -> list[dict]:
     try:
         import docx  # python-docx
@@ -23,44 +69,50 @@ def extract_docx(file_bytes: bytes) -> list[dict]:
     # We accumulate text and emit a "page" every PAGE_CHARS characters so that
     # downstream chunking works on reasonably-sized units.
     PAGE_CHARS = 3000
-    pages: list[dict] = []
-    buf: list[str] = []
-    buf_len = 0
-    page_num = 1
+    pager = _CharPager(PAGE_CHARS)
 
-    def _flush():
-        nonlocal buf, buf_len, page_num
-        text = "\n".join(buf).strip()
-        if text:
-            pages.append({"page": page_num, "text": text, "method": "native"})
-            page_num += 1
-        buf = []
-        buf_len = 0
+    _add_docx_paragraphs(doc, pager)
+    _add_docx_tables(doc, pager)  # Tables
 
-    for para in doc.paragraphs:
-        t = para.text.strip()
-        if not t:
-            continue
-        buf.append(t)
-        buf_len += len(t)
-        if buf_len >= PAGE_CHARS:
-            _flush()
-
-    # Tables
-    for table in doc.tables:
-        for row in table.rows:
-            row_text = " | ".join(c.text.strip() for c in row.cells if c.text.strip())
-            if row_text:
-                buf.append(row_text)
-                buf_len += len(row_text)
-                if buf_len >= PAGE_CHARS:
-                    _flush()
-
-    _flush()
-    return pages if pages else [{"page": 1, "text": "", "method": "native"}]
+    pager.flush()
+    return pager.pages if pager.pages else [{"page": 1, "text": "", "method": "native"}]
 
 
 # ── PPTX ─────────────────────────────────────────────────────────────────────
+
+def _extract_pptx_body_texts(slide) -> list[str]:
+    """Non-title shape text for a slide, in shape/paragraph order."""
+    texts: list[str] = []
+    for shape in slide.shapes:
+        if not shape.has_text_frame:
+            continue
+        if shape == slide.shapes.title:
+            continue  # already added
+        for para in shape.text_frame.paragraphs:
+            t = para.text.strip()
+            if t:
+                texts.append(t)
+    return texts
+
+
+def _extract_pptx_slide_parts(slide) -> list[str]:
+    parts: list[str] = []
+
+    # Slide title first (if present)
+    if slide.shapes.title and slide.shapes.title.text.strip():
+        parts.append(slide.shapes.title.text.strip())
+
+    parts.extend(_extract_pptx_body_texts(slide))
+
+    # Speaker notes
+    if slide.has_notes_slide:
+        notes_tf = slide.notes_slide.notes_text_frame
+        notes = notes_tf.text.strip() if notes_tf else ""
+        if notes:
+            parts.append(f"[Notes] {notes}")
+
+    return parts
+
 
 def extract_pptx(file_bytes: bytes) -> list[dict]:
     try:
@@ -74,32 +126,9 @@ def extract_pptx(file_bytes: bytes) -> list[dict]:
     pages: list[dict] = []
 
     for slide_num, slide in enumerate(prs.slides, start=1):
-        parts: list[str] = []
-
-        # Slide title first (if present)
-        if slide.shapes.title and slide.shapes.title.text.strip():
-            parts.append(slide.shapes.title.text.strip())
-
-        for shape in slide.shapes:
-            if not shape.has_text_frame:
-                continue
-            if shape == slide.shapes.title:
-                continue  # already added
-            for para in shape.text_frame.paragraphs:
-                t = para.text.strip()
-                if t:
-                    parts.append(t)
-
-        # Speaker notes
-        if slide.has_notes_slide:
-            notes_tf = slide.notes_slide.notes_text_frame
-            notes = notes_tf.text.strip() if notes_tf else ""
-            if notes:
-                parts.append(f"[Notes] {notes}")
-
         pages.append({
             "page": slide_num,
-            "text": "\n".join(parts),
+            "text": "\n".join(_extract_pptx_slide_parts(slide)),
             "method": "native",
         })
 

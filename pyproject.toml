@@ -54,6 +54,12 @@ dev = [
     "anyio>=4.0",
 ]
 
+[tool.coverage.run]
+# Emit repo-relative paths in coverage.xml so the dockerized SonarScanner
+# (project mounted at /usr/src) can map coverage onto sources.
+relative_files = true
+source = ["app"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

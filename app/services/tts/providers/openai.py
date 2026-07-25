@@ -63,3 +63,54 @@ async def synthesize(
         lambda: client.audio.speech.create(**kwargs),
     )
     return response.read()
+
+
+async def stream_synthesize(
+    text: str,
+    voice: str | None = None,
+    model: str = "tts-1",
+    response_format: str = "mp3",
+    speed: float = 1.0,
+    instructions: str | None = None,
+    chunk_size: int = 4096,
+):
+    """Yield audio chunks as they arrive from OpenAI."""
+    if len(text) > OPENAI_MAX_CHARS:
+        raise ValueError(f"OpenAI TTS accepts at most {OPENAI_MAX_CHARS} characters; got {len(text)}.")
+    if not (OPENAI_SPEED_MIN <= speed <= OPENAI_SPEED_MAX):
+        raise ValueError(f"`speed` must be between {OPENAI_SPEED_MIN} and {OPENAI_SPEED_MAX}; got {speed}.")
+
+    resolved_voice = voice or DEFAULT_VOICE.get(model, "alloy")
+    kwargs: dict = {
+        "model": model, "voice": resolved_voice, "input": text,
+        "response_format": response_format, "speed": speed,
+    }
+    if instructions is not None:
+        if model not in OPENAI_INSTRUCTIONS_MODELS:
+            raise ValueError(f"`instructions` only supported by {sorted(OPENAI_INSTRUCTIONS_MODELS)}.")
+        kwargs["instructions"] = instructions
+
+    client = get_client()
+    loop = asyncio.get_event_loop()
+
+    # iter_bytes() is synchronous — run in executor, yield chunks to async caller
+    import queue, threading
+
+    q: queue.Queue = queue.Queue()
+
+    def _stream():
+        try:
+            with client.audio.speech.with_streaming_response.create(**kwargs) as resp:
+                for chunk in resp.iter_bytes(chunk_size=chunk_size):
+                    q.put(chunk)
+        finally:
+            q.put(None)  # sentinel
+
+    thread = threading.Thread(target=_stream, daemon=True)
+    thread.start()
+
+    while True:
+        chunk = await loop.run_in_executor(None, q.get)
+        if chunk is None:
+            break
+        yield chunk

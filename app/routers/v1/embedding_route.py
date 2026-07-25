@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from app.auth.rbac import require_roles
@@ -17,7 +19,7 @@ _cfg = get_config().get('llm', {})
 @router.post("/add_vector_db", response_model=EmbeddingResponse)
 async def embed_store_text(
     body: EmbeddingRequest,
-    _user: dict = Depends(require_roles("admin")),
+    _user: Annotated[dict, Depends(require_roles("admin"))],
 ):
     collection_name = body.collection_name or _cfg["vector_database"]["collection_name"]
 

@@ -16,7 +16,7 @@ An open, model-agnostic AI middleware layer for **Digital Public Infrastructure 
 | **Translation**             | LLM-backed, 100+ languages including African low-resource languages                     |
 | **Speech-to-Text**          | Groq Whisper, OpenAI Whisper, Deepgram Nova-3, Spitch, Intron Sahara                    |
 | **Text-to-Speech**          | Groq PlayAI/Orpheus, OpenAI, ElevenLabs, Spitch, Intron Sahara                          |
-| **Embeddings**              | OpenAI (cloud), sentence-transformers**(sovereign, no API key)**                  |
+| **Embeddings**              | OpenAI (cloud), sentence-transformers**(sovereign, no API key)**                        |
 | **Vector DB**               | Weaviate (open-source), Qdrant (open-source), Pinecone (managed)                        |
 | **Auth**                    | Local JWT (HS256), OIDC RS256/ES256 (Keycloak, Auth0, Google), Token Introspection      |
 | **Session History**         | Redis-backed multi-turn conversation history with configurable TTL                      |
@@ -181,14 +181,14 @@ Supported input formats: **GGUF** (native). For Hugging Face safetensors, conver
 
 ### Recommended sovereign models
 
-| Use case                     | Model                   | Size   |
-| ---------------------------- | ----------------------- | ------ |
-| **Local dev / testing**      | `qwen2.5:0.5b` ★ default | 397 MB |
-| General chat                 | `llama3.2`              | 2 GB   |
-| Long context / reasoning     | `qwen2.5:7b`            | 4 GB   |
-| Multilingual (African langs) | `aya-expanse:8b`        | 5 GB   |
-| Low-resource device          | `phi3.5:mini`           | 2 GB   |
-| Embeddings                   | `nomic-embed-text`      | 270 MB |
+| Use case                      | Model                       | Size   |
+| ----------------------------- | --------------------------- | ------ |
+| **Local dev / testing** | `qwen2.5:0.5b` ★ default | 397 MB |
+| General chat                  | `llama3.2`                | 2 GB   |
+| Long context / reasoning      | `qwen2.5:7b`              | 4 GB   |
+| Multilingual (African langs)  | `aya-expanse:8b`          | 5 GB   |
+| Low-resource device           | `phi3.5:mini`             | 2 GB   |
+| Embeddings                    | `nomic-embed-text`        | 270 MB |
 
 Pull any with `ollama pull <model>`.
 

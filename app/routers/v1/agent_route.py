@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.config import get_config
@@ -18,7 +20,6 @@ _rl = get_config().get("llm", {}).get("rate_limit", {})
 
 @router.post(
     "/run",
-    response_model=AgentResponse,
     summary="Run agent",
     description="""
 Run a multi-step AI agent that can use built-in DPI tools to complete a goal.
@@ -37,7 +38,7 @@ it produces a final answer — all in one request.
 )
 async def run_agent(
     body: AgentRequest,
-    _user: dict = Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60))),
+    _user: Annotated[dict, Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60)))],
 ) -> AgentResponse:
     model = body.model or DEFAULT_MODEL.get(body.provider, "")
 
@@ -70,7 +71,7 @@ async def run_agent(
     description="Returns all built-in tools the agent can call, with their descriptions and input schemas.",
 )
 async def list_tools(
-    _user: dict = Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60))),
+    _user: Annotated[dict, Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60)))],
 ) -> list[dict]:
     return [
         {

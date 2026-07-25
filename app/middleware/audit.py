@@ -108,11 +108,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         # ── Resolve client IP ────────────────────────────────────────────────
         forwarded_for = request.headers.get("x-forwarded-for")
-        client_ip = (
-            forwarded_for.split(",")[0].strip()
-            if forwarded_for
-            else (request.client.host if request.client else "unknown")
-        )
+        direct_ip = request.client.host if request.client else "unknown"
+        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else direct_ip
 
         # ── Resolve actor (populated by upstream auth middleware) ────────────
         user_id: str = getattr(request.state, "user_id", None) or "anonymous"

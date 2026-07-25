@@ -20,7 +20,7 @@ def _chat_body(
     system: str | None = None,
 ) -> dict:
     body: dict = {
-        "messages": messages or [{"role": "user", "content": "Hello"}],
+        "messages": [{"role": "user", "content": "Hello"}] if messages is None else messages,
         "provider": provider,
         "max_tokens": max_tokens,
     }

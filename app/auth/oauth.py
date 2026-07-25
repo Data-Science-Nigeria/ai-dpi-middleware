@@ -97,8 +97,6 @@ async def _validate_hs256(token: str, cfg: dict) -> dict:
             token,
             cfg["key"],
             algorithms=[cfg.get('algorithm', 'HS256')],
-            # audience=cfg.get("audience"),
-            # issuer=cfg.get("issuer"),
         )
         return resp
     except Exception as e:

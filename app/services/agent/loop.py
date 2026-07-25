@@ -19,6 +19,36 @@ MAX_ITERATIONS = 10  # hard cap to prevent runaway loops
 
 # ── Anthropic ──────────────────────────────────────────────────────────────────
 
+async def _execute_anthropic_tool_calls(
+    tool_calls: list,
+    trace: list[dict],
+) -> list[dict]:
+    """Execute Anthropic tool_use blocks, recording each in trace.
+
+    Returns the tool_result blocks to append to the conversation.
+    """
+    tool_results = []
+    for call in tool_calls:
+        tool = get(call.name)
+        if tool is None:
+            result_content = f"Error: unknown tool '{call.name}'"
+        else:
+            trace.append({"tool": call.name, "input": call.input})
+            try:
+                result_content = await tool.fn(call.input)
+            except Exception as exc:
+                result_content = f"Tool error: {exc}"
+            trace[-1]["output"] = result_content
+
+        tool_results.append({
+            "type": "tool_result",
+            "tool_use_id": call.id,
+            "content": result_content,
+        })
+
+    return tool_results
+
+
 async def _run_anthropic(
     messages: list[dict],
     model: str,
@@ -57,7 +87,7 @@ async def _run_anthropic(
 
         try:
             response = await client.messages.create(**params)
-        except Exception as exc:
+        except Exception:
             llm_errors_total.labels(provider="anthropic").inc()
             raise
 
@@ -73,24 +103,7 @@ async def _run_anthropic(
         msgs.append({"role": "assistant", "content": response.content})
 
         # Execute each tool and build tool_result blocks
-        tool_results = []
-        for call in tool_calls:
-            tool = get(call.name)
-            if tool is None:
-                result_content = f"Error: unknown tool '{call.name}'"
-            else:
-                trace.append({"tool": call.name, "input": call.input})
-                try:
-                    result_content = await tool.fn(call.input)
-                except Exception as exc:
-                    result_content = f"Tool error: {exc}"
-                trace[-1]["output"] = result_content
-
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": call.id,
-                "content": result_content,
-            })
+        tool_results = await _execute_anthropic_tool_calls(tool_calls, trace)
 
         msgs.append({"role": "user", "content": tool_results})
 
@@ -98,6 +111,42 @@ async def _run_anthropic(
 
 
 # ── OpenAI / Groq ──────────────────────────────────────────────────────────────
+
+async def _execute_openai_tool_calls(
+    tool_calls: list,
+    trace: list[dict],
+) -> list[dict]:
+    """Execute OpenAI-compatible tool calls, recording each in trace.
+
+    Returns the tool-role messages to append to the conversation.
+    """
+    tool_messages = []
+    for call in tool_calls:
+        fn_name = call.function.name
+        try:
+            params = json.loads(call.function.arguments)
+        except json.JSONDecodeError:
+            params = {}
+
+        tool = get(fn_name)
+        trace.append({"tool": fn_name, "input": params})
+        if tool is None:
+            result = f"Error: unknown tool '{fn_name}'"
+        else:
+            try:
+                result = await tool.fn(params)
+            except Exception as exc:
+                result = f"Tool error: {exc}"
+        trace[-1]["output"] = result
+
+        tool_messages.append({
+            "role": "tool",
+            "tool_call_id": call.id,
+            "content": result,
+        })
+
+    return tool_messages
+
 
 async def _run_openai_compat(
     messages: list[dict],
@@ -144,7 +193,7 @@ async def _run_openai_compat(
                 tools=oai_tools,
                 tool_choice="auto",
             )
-        except Exception as exc:
+        except Exception:
             llm_errors_total.labels(provider=provider).inc()
             raise
 
@@ -154,29 +203,7 @@ async def _run_openai_compat(
         if not msg.tool_calls:
             return msg.content or "", trace
 
-        for call in msg.tool_calls:
-            fn_name = call.function.name
-            try:
-                params = json.loads(call.function.arguments)
-            except json.JSONDecodeError:
-                params = {}
-
-            tool = get(fn_name)
-            trace.append({"tool": fn_name, "input": params})
-            if tool is None:
-                result = f"Error: unknown tool '{fn_name}'"
-            else:
-                try:
-                    result = await tool.fn(params)
-                except Exception as exc:
-                    result = f"Tool error: {exc}"
-            trace[-1]["output"] = result
-
-            msgs.append({
-                "role": "tool",
-                "tool_call_id": call.id,
-                "content": result,
-            })
+        msgs.extend(await _execute_openai_tool_calls(msg.tool_calls, trace))
 
     return "Agent reached max iterations without a final answer.", trace
 

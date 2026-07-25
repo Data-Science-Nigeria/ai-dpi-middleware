@@ -60,6 +60,37 @@ async def chat(
     raise ValueError(f"Unsupported provider: {provider!r}")
 
 
+async def _resolve_stream(
+    messages: list[dict],
+    provider: str,
+    model: str,
+    system: str | None,
+    max_tokens: int,
+):
+    if provider == "anthropic":
+        return anthropic_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
+    if provider == "openai":
+        return await openai_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
+    if provider == "groq":
+        return await groq_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
+    if provider == "gemini":
+        return gemini_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
+    if provider == "ollama":
+        return ollama_provider.stream_chat(
+            messages=messages, model=model, system=system, max_tokens=max_tokens,
+        )
+
+    raise ValueError(f"Unsupported provider: {provider!r}")
+
+
 async def stream_chat(
     messages: list[dict],
     provider: str,
@@ -72,32 +103,9 @@ async def stream_chat(
     if system is None:
         system = _load_system_prompt(cfg)
 
-    if provider == "anthropic":
-        async for chunk in anthropic_provider.stream_chat(
-            messages=messages, model=model, system=system, max_tokens=max_tokens,
-        ):
-            yield chunk
-    elif provider == "openai":
-        async_iter = await openai_provider.stream_chat(
-            messages=messages, model=model, system=system, max_tokens=max_tokens,
-        )
-        async for chunk in async_iter:
-            yield chunk
-    elif provider == "groq":
-        async_iter = await groq_provider.stream_chat(
-            messages=messages, model=model, system=system, max_tokens=max_tokens,
-        )
-        async for chunk in async_iter:
-            yield chunk
-    elif provider == "gemini":
-        async for chunk in gemini_provider.stream_chat(
-            messages=messages, model=model, system=system, max_tokens=max_tokens,
-        ):
-            yield chunk
-    elif provider == "ollama":
-        async for chunk in ollama_provider.stream_chat(
-            messages=messages, model=model, system=system, max_tokens=max_tokens,
-        ):
-            yield chunk
-    else:
-        raise ValueError(f"Unsupported provider: {provider!r}")
+    async_iter = await _resolve_stream(
+        messages=messages, provider=provider, model=model,
+        system=system, max_tokens=max_tokens,
+    )
+    async for chunk in async_iter:
+        yield chunk

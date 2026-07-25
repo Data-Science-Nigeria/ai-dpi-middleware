@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from app.config import get_config
@@ -17,7 +19,6 @@ _rl = get_config().get("llm", {}).get("rate_limit", {})
 
 @router.post(
     "",
-    response_model=ExtractionResponse,
     summary="Extract structured data from text",
     description="""
 Extract structured fields from free-form text using the LLM's native structured output.
@@ -52,7 +53,7 @@ Output is validated against the supplied JSON Schema. If validation fails and
 )
 async def extract(
     body: ExtractionRequest,
-    _user: dict = Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60))),
+    _user: Annotated[dict, Depends(rate_limit(part="chat", user_limit=_rl.get("user", 10), admin_limit=_rl.get("admin", 60)))],
 ) -> ExtractionResponse:
     model = body.model or DEFAULT_MODEL.get(body.provider, "")
 

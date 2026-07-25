@@ -1,7 +1,6 @@
 from typing import Callable
 
 from fastapi import Request, Response
-from fastapi.security import HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.auth.oauth import get_current_user
@@ -58,10 +57,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         try:
             # Re-use your existing dependency directly — no duplicated logic.
-            credentials = HTTPAuthorizationCredentials(
-                scheme="Bearer", credentials=raw_token
-            )
-            claims: dict = await get_current_user(credentials)
+            # get_current_user accepts the bearer token string (same value FastAPI
+            # would inject via OAuth2PasswordBearer).
+            claims: dict = await get_current_user(raw_token)
         except Exception as exc:
             # get_current_user raises HTTPException on any validation failure.
             # Catch broadly so unexpected errors also produce a clean 401

@@ -16,7 +16,13 @@ from app.auth.oauth import  _auth_cfgs
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/token")
+@router.post(
+    "/token",
+    responses={
+        400: {"description": "No local auth provider configured; token could not be generated."},
+        401: {"description": "Invalid client credentials."},
+    },
+)
 async def issue_token(body: Annotated[OAuth2PasswordRequestForm, Depends()]) -> TokenResponse:
     """Exchange client credentials for a JWT containing the client's roles."""    
     for cfg in _auth_cfgs:
@@ -42,10 +48,10 @@ async def issue_token(body: Annotated[OAuth2PasswordRequestForm, Depends()]) -> 
 
 
 @router.get("/me")
-async def verify_me(user: dict = Depends(get_current_user)):
+async def verify_me(user: Annotated[dict, Depends(get_current_user)]):
     return user
 
 @router.get("/protected_route")
-async def protected_route(user: dict = Depends(get_current_user)):
+async def protected_route(user: Annotated[dict, Depends(get_current_user)]):
     return {"message": "User can acess the protected route."}
 

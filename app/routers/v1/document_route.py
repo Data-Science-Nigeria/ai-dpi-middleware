@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
@@ -62,9 +62,8 @@ def _classify(filename: str, content_type: str) -> Literal["pdf", "image", "offi
 
 @router.post(
     "/ingest",
-    response_model=IngestResponse,
     summary="Ingest a document into the RAG vector store",
-    description=f"""
+    description="""
 Upload any popular knowledge format for RAG ingestion.
 
 **Supported formats**:
@@ -87,13 +86,14 @@ Requires **admin** role.
 """,
 )
 async def ingest_document(
-    file: UploadFile = File(..., description="Document file to ingest"),
-    collection_name: str | None = Form(None, description="Target collection (uses default if omitted)"),
-    ocr_backend: Literal["tesseract", "llm"] = Form(
-        "tesseract", description="OCR backend — applies to scanned PDFs and image files only"
-    ),
-    language: str = Form("eng", description="Tesseract language code, e.g. 'eng', 'fra', 'yor', 'swa'"),
-    _user: dict = Depends(require_roles("admin")),
+    file: Annotated[UploadFile, File(description="Document file to ingest")],
+    _user: Annotated[dict, Depends(require_roles("admin"))],
+    collection_name: Annotated[str | None, Form(description="Target collection (uses default if omitted)")] = None,
+    ocr_backend: Annotated[
+        Literal["tesseract", "llm"],
+        Form(description="OCR backend — applies to scanned PDFs and image files only"),
+    ] = "tesseract",
+    language: Annotated[str, Form(description="Tesseract language code, e.g. 'eng', 'fra', 'yor', 'swa'")] = "eng",
 ) -> IngestResponse:
     cfg = get_config().get("document", {})
     max_bytes = cfg.get("max_file_size_mb", _DEFAULT_MAX_MB) * 1024 * 1024
@@ -149,15 +149,14 @@ async def ingest_document(
 
 @router.post(
     "/ingest/text",
-    response_model=IngestResponse,
     summary="Ingest raw text into the RAG vector store",
     description="Directly ingest a text string without uploading a file. Useful for programmatic ingestion.",
 )
 async def ingest_raw_text(
-    text: str = Form(..., description="Plain text to ingest"),
-    source: str = Form("manual", description="Label for the source (used in metadata)"),
-    collection_name: str | None = Form(None),
-    _user: dict = Depends(require_roles("admin")),
+    text: Annotated[str, Form(description="Plain text to ingest")],
+    _user: Annotated[dict, Depends(require_roles("admin"))],
+    source: Annotated[str, Form(description="Label for the source (used in metadata)")] = "manual",
+    collection_name: Annotated[str | None, Form()] = None,
 ) -> IngestResponse:
     result = await pipeline.ingest_text(
         text=text,

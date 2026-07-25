@@ -27,11 +27,10 @@ PROVIDER_MODELS: dict[str, frozenset[str]] = {
     }),
 }
 
-MODEL_VOICES: dict[str, frozenset[str]] = {
-    # All ElevenLabs models share the same voice pool
-    model: ELEVENLABS_VOICES
-    for model in PROVIDER_MODELS["elevenlabs"]
-}
+MODEL_VOICES: dict[str, frozenset[str]] = dict.fromkeys(
+    # All ElevenLabs models share the same (immutable) voice pool
+    PROVIDER_MODELS["elevenlabs"], ELEVENLABS_VOICES
+)
 
 DEFAULT_VOICE: dict[str, str] = {
     "eleven_multilingual_v2": "Rachel",
